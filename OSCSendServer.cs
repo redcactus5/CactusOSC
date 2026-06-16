@@ -7,24 +7,25 @@ using System.Threading.Channels;
 
 namespace CactusOSC
 {
-    public class OSCSendServer
+    internal class OSCSendServer
     {
         UdpClient sendServer;
         private string address;
         private UInt16 port;
-        private Channel<OscMessage> messageQueue;
+        private Channel<byte[]> messageQueue;
         private CancellationTokenSource shutdownTrigger;
         private Task sendTask;
         ManualResetEventSlim finishedSend;
+        private messageConverter converter;
 
-
-        public OSCSendServer(string address, UInt16 port)
+        public OSCSendServer(messageConverter converter, string address, UInt16 port)
         {
 
             this.address = address;
             this.port = port;
-            this.messageQueue = Channel.CreateUnbounded<OscMessage>();
+            this.messageQueue = Channel.CreateUnbounded<byte[]>();
             finishedSend = new ManualResetEventSlim(false);
+            this.converter = converter;
         }
         public void start()
         {
@@ -43,7 +44,7 @@ namespace CactusOSC
         }
         private async Task SendOSC()
         {
-            OscMessage messageCache;
+            byte[] messageCache;
 
             while (!this.shutdownTrigger.IsCancellationRequested)
             {
@@ -54,7 +55,7 @@ namespace CactusOSC
                     {
                         if (!messageCache.Equals(null))
                         {
-                            await sendServer.SendMessageAsync(messageCache);
+                            await sendServer.SendAsync(messageCache);
                         }
 
                     }
@@ -94,7 +95,7 @@ namespace CactusOSC
 
         }
 
-        public void sendMessage(OscMessage message)
+        public void sendMessage(byte[] message)
         {
             if (sendServer == null)
             {

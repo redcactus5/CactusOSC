@@ -7,20 +7,22 @@ using System.Text;
 namespace CactusOSC
 {
 
-    public class OSCReceiveServer
+    internal class OSCReceiveServer
     {
         UdpClient receiveServer;
         private string address;
         private UInt16 port;
-        private ConcurrentQueue<OscMessage> messagePool;
+        private ConcurrentQueue<byte[]> messagePool;
         private CancellationTokenSource shutdownTrigger;
         private Task receiveTask;
+        private messageConverter converter;
 
-        public OSCReceiveServer(string address, UInt16 port)
+        public OSCReceiveServer(messageConverter converter, string address, UInt16 port)
         {
             this.address = address;
             this.port = port;
-            this.messagePool = new ConcurrentQueue<OscMessage>();
+            this.messagePool = new ConcurrentQueue<byte[]>();
+            this.converter = converter;
             this.start();
 
 
@@ -37,12 +39,7 @@ namespace CactusOSC
             
             this.receiveTask = Task.Run(receiveOSC);
         }
-        private List<OscMessage> getBundledMessages(object packets)
-        {
-            Queue<object> bundles = new Queue<object>();
-            List<OscMessage> messages = new List<OscMessage>();
-
-        }
+        
         private async Task receiveOSC()
         {
             while (!this.shutdownTrigger.IsCancellationRequested)
@@ -50,10 +47,10 @@ namespace CactusOSC
                 try
                 {
                     UdpReceiveResult message = await receiveServer.ReceiveAsync();
-                    object packet = message.Buffer;
+                    
 
 
-                    this.messagePool.Enqueue(message);
+                    this.messagePool.Enqueue(message.Buffer);
                 }
                 catch (ObjectDisposedException)
                 {
@@ -78,10 +75,10 @@ namespace CactusOSC
             this.receiveServer.Close();
         }
 
-        public List<OscMessage> getMessages()
+        public List<byte[]> getMessages()
         {
-            OscMessage messageCache;
-            List<OscMessage> received = new List<OscMessage>();
+            byte[] messageCache;
+            List<byte[]> received = new List<byte[]>();
             while (messagePool.TryDequeue(out messageCache))
             {
                 received.Add(messageCache);
