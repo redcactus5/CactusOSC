@@ -3,12 +3,16 @@
   "WorkspaceRootPath": "C:\\Users\\roboc\\Desktop\\misc\\programming\\c#\\CactusOSC\\",
   "Documents": [
     {
+      "AbsoluteMoniker": "D:0:0:{EE3DCBA5-CD2E-80DA-2FBF-08F57AB92E7D}|CactusOSC.csproj|c:\\users\\roboc\\desktop\\misc\\programming\\c#\\cactusosc\\messageconverter.messagetobytes.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{EE3DCBA5-CD2E-80DA-2FBF-08F57AB92E7D}|CactusOSC.csproj|solutionrelative:messageconverter.messagetobytes.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{EE3DCBA5-CD2E-80DA-2FBF-08F57AB92E7D}|CactusOSC.csproj|c:\\users\\roboc\\desktop\\misc\\programming\\c#\\cactusosc\\osctypes.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{EE3DCBA5-CD2E-80DA-2FBF-08F57AB92E7D}|CactusOSC.csproj|solutionrelative:osctypes.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{EE3DCBA5-CD2E-80DA-2FBF-08F57AB92E7D}|CactusOSC.csproj|c:\\users\\roboc\\desktop\\misc\\programming\\c#\\cactusosc\\messageconverter.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{EE3DCBA5-CD2E-80DA-2FBF-08F57AB92E7D}|CactusOSC.csproj|solutionrelative:messageconverter.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{EE3DCBA5-CD2E-80DA-2FBF-08F57AB92E7D}|CactusOSC.csproj|c:\\users\\roboc\\desktop\\misc\\programming\\c#\\cactusosc\\oscserver.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{EE3DCBA5-CD2E-80DA-2FBF-08F57AB92E7D}|CactusOSC.csproj|solutionrelative:oscserver.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{EE3DCBA5-CD2E-80DA-2FBF-08F57AB92E7D}|CactusOSC.csproj|c:\\users\\roboc\\desktop\\misc\\programming\\c#\\cactusosc\\oscreceiveserver.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
@@ -17,10 +21,6 @@
     {
       "AbsoluteMoniker": "D:0:0:{EE3DCBA5-CD2E-80DA-2FBF-08F57AB92E7D}|CactusOSC.csproj|c:\\users\\roboc\\desktop\\misc\\programming\\c#\\cactusosc\\oscsendserver.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{EE3DCBA5-CD2E-80DA-2FBF-08F57AB92E7D}|CactusOSC.csproj|solutionrelative:oscsendserver.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{EE3DCBA5-CD2E-80DA-2FBF-08F57AB92E7D}|CactusOSC.csproj|c:\\users\\roboc\\desktop\\misc\\programming\\c#\\cactusosc\\oscserver.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{EE3DCBA5-CD2E-80DA-2FBF-08F57AB92E7D}|CactusOSC.csproj|solutionrelative:oscserver.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
   ],
   "DocumentGroupContainers": [
@@ -30,11 +30,37 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 4,
+          "SelectedChildIndex": 0,
           "Children": [
             {
               "$type": "Document",
-              "DocumentIndex": 4,
+              "DocumentIndex": 0,
+              "Title": "messageConverter.MessageToBytes.cs",
+              "DocumentMoniker": "C:\\Users\\roboc\\Desktop\\misc\\programming\\c#\\CactusOSC\\messageConverter.MessageToBytes.cs",
+              "RelativeDocumentMoniker": "messageConverter.MessageToBytes.cs",
+              "ToolTip": "C:\\Users\\roboc\\Desktop\\misc\\programming\\c#\\CactusOSC\\messageConverter.MessageToBytes.cs",
+              "RelativeToolTip": "messageConverter.MessageToBytes.cs",
+              "ViewState": "AgIAAMIAAAAAAAAAAAAwwC4BAAA5AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-16T07:05:13.588Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "OSCTypes.cs",
+              "DocumentMoniker": "C:\\Users\\roboc\\Desktop\\misc\\programming\\c#\\CactusOSC\\OSCTypes.cs",
+              "RelativeDocumentMoniker": "OSCTypes.cs",
+              "ToolTip": "C:\\Users\\roboc\\Desktop\\misc\\programming\\c#\\CactusOSC\\OSCTypes.cs",
+              "RelativeToolTip": "OSCTypes.cs",
+              "ViewState": "AgIAAKgCAAAAAAAAAAASwMECAABEAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-16T05:44:15.377Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
               "Title": "OSCServer.cs",
               "DocumentMoniker": "C:\\Users\\roboc\\Desktop\\misc\\programming\\c#\\CactusOSC\\OSCServer.cs",
               "RelativeDocumentMoniker": "OSCServer.cs",
@@ -42,55 +68,33 @@
               "RelativeToolTip": "OSCServer.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-06-16T07:10:00.856Z"
+              "WhenOpened": "2026-06-16T07:10:00.856Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
-              "Title": "messageConverter.cs",
-              "DocumentMoniker": "C:\\Users\\roboc\\Desktop\\misc\\programming\\c#\\CactusOSC\\messageConverter.cs",
-              "RelativeDocumentMoniker": "messageConverter.cs",
-              "ToolTip": "C:\\Users\\roboc\\Desktop\\misc\\programming\\c#\\CactusOSC\\messageConverter.cs",
-              "RelativeToolTip": "messageConverter.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAYAAAAEAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-06-16T07:05:13.588Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 3,
               "Title": "OSCReceiveServer.cs",
               "DocumentMoniker": "C:\\Users\\roboc\\Desktop\\misc\\programming\\c#\\CactusOSC\\OSCReceiveServer.cs",
               "RelativeDocumentMoniker": "OSCReceiveServer.cs",
               "ToolTip": "C:\\Users\\roboc\\Desktop\\misc\\programming\\c#\\CactusOSC\\OSCReceiveServer.cs",
               "RelativeToolTip": "OSCReceiveServer.cs",
-              "ViewState": "AgIAAE0AAAAAAAAAAADwvxEAAAAIAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABEAAAAIAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-06-16T05:46:06.405Z"
+              "WhenOpened": "2026-06-16T05:46:06.405Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 3,
+              "DocumentIndex": 4,
               "Title": "OSCSendServer.cs",
               "DocumentMoniker": "C:\\Users\\roboc\\Desktop\\misc\\programming\\c#\\CactusOSC\\OSCSendServer.cs",
               "RelativeDocumentMoniker": "OSCSendServer.cs",
               "ToolTip": "C:\\Users\\roboc\\Desktop\\misc\\programming\\c#\\CactusOSC\\OSCSendServer.cs",
               "RelativeToolTip": "OSCSendServer.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAGEAAAAmAAAAAAAAAA==",
+              "ViewState": "AgIAAG0AAAAAAAAAAAAAAGEAAAAmAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-06-16T05:44:45.355Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 0,
-              "Title": "OSCTypes.cs",
-              "DocumentMoniker": "C:\\Users\\roboc\\Desktop\\misc\\programming\\c#\\CactusOSC\\OSCTypes.cs",
-              "RelativeDocumentMoniker": "OSCTypes.cs",
-              "ToolTip": "C:\\Users\\roboc\\Desktop\\misc\\programming\\c#\\CactusOSC\\OSCTypes.cs",
-              "RelativeToolTip": "OSCTypes.cs",
-              "ViewState": "AgIAAFIDAAAAAAAAAAAAAHACAABdAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-06-16T05:44:15.377Z",
+              "WhenOpened": "2026-06-16T05:44:45.355Z",
               "EditorCaption": ""
             }
           ]

@@ -1,7 +1,6 @@
-﻿
-using CactusOSC;
-using System.Drawing;
-using System.Runtime.CompilerServices;
+﻿using CactusOSC;
+
+
 using System.Text;
 
 namespace CactusOSC
@@ -168,6 +167,7 @@ namespace CactusOSC
                 if (overflow != 0)
                 {
                     tempsize += 4- overflow;
+                    tempsize += 4;
                 }
                     
                 
@@ -465,9 +465,9 @@ namespace CactusOSC
             return "infinitum";
         }
 
-        public override OSCNil clone()
+        public override OSCInfinitum clone()
         {
-            return new OSCNil();
+            return new OSCInfinitum();
         }
 
     }
@@ -496,6 +496,11 @@ namespace CactusOSC
                 dataclone[index] = this.data[index].clone();
             }
             return dataclone;
+        }
+
+         internal  OSCValue[] getRawValue()
+        {
+            return this.data;
         }
 
         public override string toString()
@@ -638,7 +643,7 @@ namespace CactusOSC
             }
             return clone;
         }
-        public OSCValue[] getRawValues()
+        internal OSCValue[] getRawValues()
         {
             return this.values;
         }
@@ -689,7 +694,7 @@ public class OSCBundle : OSCPackage
     private const int identSize = 8;
     private const int timeTagSize = 8;
     
-    public List<OSCMessage> RawUnpackBundle(OSCBundle bundle)
+    internal List<OSCMessage> RawUnpackBundle(OSCBundle bundle)
     {
         
         List<OSCMessage> unpackedValues = new List<OSCMessage>();
@@ -777,7 +782,7 @@ public class OSCBundle : OSCPackage
         }
         return elementsCopy;
     }
-    public OSCBundleElement[] getRawElements()
+    internal OSCBundleElement[] getRawElements()
     {
         return this.elements;
     }
@@ -789,6 +794,10 @@ public class OSCBundle : OSCPackage
             elementsCopy[index]= this.elements[index].clone();
         }
         return new OSCBundle(elementsCopy,this.timeTag);
+    }
+    public long getTimeTag()
+    {
+        return this.timeTag;
     }
 }
 
@@ -825,7 +834,7 @@ public class OSCBundleElement
         }
     }
 
-    public OSCPackage getRawContents()
+    internal OSCPackage getRawContents()
     {
         if (this.contents.getPackageType() == OSCPackageType.OSCMessage)
         {
