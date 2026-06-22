@@ -1,42 +1,121 @@
 ﻿using System;
+using System.Buffers;
+using System.Buffers.Binary;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Text;
+
 
 namespace CactusOSC
 {
+    public class rawOSCPackage
+    {
+        private byte[] data;
+        private int head;
+        
+        internal void updateHead(int offset)
+        {
+            this.head += offset;
+        }
+        internal void setHead(int newPos)
+        {
+            this.head = newPos;
+        }
+        internal byte[] getRawData()
+        {
+            return this.data;
+        }
+        
+        public int getHead()
+        {
+            return this.head;
+        }
+        public int writeData(byte[] dataToWrite)
+        {
+            if (dataToWrite.Length > 0)
+            {
+                Buffer.BlockCopy(dataToWrite, 0, this.data, this.head, dataToWrite.Length);
+                this.head += this.data.Length;
+            }
+            return dataToWrite.Length;
+        }
+
+        public rawOSCPackage(int size)
+        {
+            this.head = 0;
+            this.data= new byte[size];
+        }
+    }
     internal partial class messageConverter
     {
+        private byte[] openBracketBytes;
+        private byte[] closeBracketBytes;
+        private byte[] commaBytes;
+        byte[] bundleIdent;
+        private byte[][] typeStrings;
+        private byte[] nullByte;
+        private byte[][] paddingBytes;
+        private byte[] writeCache8;
+        private byte[] writeCache4;
+        private byte[] writecache1;
 
-        private string generateArrayTypeString(OSCArray array)
+        public messageConverter()
         {
+            //init the constants and caches
+            typeStrings = new byte[15][] { Encoding.UTF8.GetBytes("s"), Encoding.UTF8.GetBytes("i"), Encoding.UTF8.GetBytes("f"), Encoding.UTF8.GetBytes("b"), Encoding.UTF8.GetBytes("h"), Encoding.UTF8.GetBytes("t"), Encoding.UTF8.GetBytes("d"), Encoding.UTF8.GetBytes("S"), Encoding.UTF8.GetBytes("c"), Encoding.UTF8.GetBytes("r"), Encoding.UTF8.GetBytes("m"), Encoding.UTF8.GetBytes("T"), Encoding.UTF8.GetBytes("F"), Encoding.UTF8.GetBytes("N"), Encoding.UTF8.GetBytes("I") };
+            nullByte = new byte[] { 0 };
+            paddingBytes = new byte[4][] { Array.Empty<byte>(), new byte[] { 0 }, new byte[] { 0, 0 }, new byte[] { 0, 0, 0 } };
+            writeCache8 = new byte[8];
+            writeCache4 = new byte[4];
+            writecache1 = new byte[1];
+
+
+            openBracketBytes = Encoding.UTF8.GetBytes("[");
+            closeBracketBytes = Encoding.UTF8.GetBytes("]");
+            commaBytes = Encoding.UTF8.GetBytes(",");
+            bundleIdent= this.generateOSCString("#bundle");
+
+        }
+
+        private rawOSCPackage generateArrayTypeString(OSCArray array,rawOSCPackage target)
+        {
+
             
-            StringBuilder typeString = new StringBuilder();
+
 
 
             Stack<OSCArray> arrayStack = new Stack<OSCArray>();
-            Stack<int> arrayIndex= new Stack<int>();
-            arrayStack.Push(array);
-            typeString.Append("[");
-            while (arrayStack.Count > 0)
+            Stack<int> restoreIndex= new Stack<int>();
+
+            int bytesWritten = 0;
+            bytesWritten=target.writeData(this.openBracketBytes);
+
+
+            OSCArray currentArray = array;
+            OSCValue[] currentContents = currentArray.getRawValue();
+            int currentIndex = 0;
+            
+
+            bool solving = true;
+            while (solving)
             {
-                OSCArray currentArray = arrayStack.Pop();
-                OSCValue[] currentContents=currentArray.getRawValue();
-                int currentIndex = 0;
+                
                 while (currentIndex<currentContents.Length)
                 {
                     if (currentContents[currentIndex].getOSCType() == OSCValueType.OSCArray)
                     {
                         arrayStack.Push(currentArray);
-                        arrayIndex.Push(currentIndex+1);
-                        
-                        typeString.Append('[');
+                        restoreIndex.Push(currentIndex+1);
+
+                        bytesWritten+=target.writeData(this.openBracketBytes);
                         currentArray = ((OSCArray)currentContents[currentIndex]);
                         currentIndex = 0;
                         currentContents = currentArray.getRawValue();
                     }
                     else
                     {
-                        typeString.Append(this.getOSCTypeString(currentContents[currentIndex]));
+                        bytesWritten = this.getOSCTypeString(currentContents[currentIndex], target);
                         currentIndex++;
                     }
                     
@@ -45,67 +124,76 @@ namespace CactusOSC
                 {
                     currentArray=arrayStack.Pop();
                     currentContents = currentArray.getRawValue();
-                    currentIndex = arrayIndex.Pop();
-                    
-                    
+                    currentIndex = restoreIndex.Pop();
+
+
                 }
-                typeString.Append("]");
+                else
+                {
+                    solving = false;
+                }
+                bytesWritten= target.writeData(this.closeBracketBytes);
             }
-            return typeString.ToString();
+            bytesWritten = target.writeData(this.nullByte);
+
+            int padding = this.calculateOSCStringOverflowSize(bytesWritten);
+            target.writeData(this.paddingBytes[padding]);
+
+            return target;
         }
 
-        private string getOSCTypeString(OSCValue value)
+        private int getOSCTypeString(OSCValue value, rawOSCPackage target)
         {
             switch (value.getOSCType())
             {
                 case OSCValueType.OSCString:
-                    return("s");
+                    return target.writeData(this.typeStrings[0]);
                     break;
                 case OSCValueType.OSCInt:
-                    return("i");
+                    return target.writeData(this.typeStrings[1]);
                     break;
                 case OSCValueType.OSCFloat:
-                    return("f");
+                    return target.writeData(this.typeStrings[2]);
                     break;
                 case OSCValueType.OSCBlob:
-                    return("b");
+                    return target.writeData(this.typeStrings[3]);
                     break;
                 case OSCValueType.OSCLong:
-                    return("h");
+                    return target.writeData(this.typeStrings[4]);
                     break;
                 case OSCValueType.OSCTimeTag:
-                    return("t");
+                    return target.writeData(this.typeStrings[5]);
                     break;
                 case OSCValueType.OSCDouble:
-                    return("d");
+                    return target.writeData(this.typeStrings[6]);
                     break;
                 case OSCValueType.OSCNonstandardString:
-                    return("S");
+                    return target.writeData(this.typeStrings[7]);
                     break;
                 case OSCValueType.OSCChar:
-                    return("c");
+                    return target.writeData(this.typeStrings[8]);
                     break;
                 case OSCValueType.OSCRGBA:
-                    return("r");
+                    return target.writeData(this.typeStrings[9]);
                     break;
                 case OSCValueType.OSCMIDI:
-                    return("m");
+                    return target.writeData(this.typeStrings[10]);
                     break;
                 case OSCValueType.OSCBool:
                     if (((OSCBool)value).getValue())
                     {
-                        return("T");
+                        return target.writeData(this.typeStrings[11]);
                     }
                     else
                     {
-                        return("F");
+                        return target.writeData(this.typeStrings[12]);
                     }
                     break;
                 case OSCValueType.OSCNil:
-                    return("N");
+                    return target.writeData(this.typeStrings[13]);
                     break;
-                case OSCValueType.OSCInfinum: 
-                    return("I");
+                case OSCValueType.OSCInfinum:
+                    return target.writeData(this.typeStrings[14]);
                     break;
                 default:
                         throw new Exception("invalid OSCValueType!");
@@ -116,95 +204,62 @@ namespace CactusOSC
             
         }
 
-        private byte[] getOSCValueBytes(OSCValue value)
+        private rawOSCPackage getOSCValueBytes(OSCValue value, rawOSCPackage target)
         {
-            byte[] result;
+            
+
             switch (value.getOSCType())
             {
                 case OSCValueType.OSCString:
-                    return generateOSCString(((OSCString)value).getValue());
+                    GenerateAndWriteOSCString(((OSCString)value).getValue(),target);
                     break;
                 case OSCValueType.OSCInt:
-                    result = BitConverter.GetBytes(((OSCInt)value).getValue());
-                    if (BitConverter.IsLittleEndian)
-                    {
-                        Array.Reverse(result);
-                    }
-                    return result;
+                    BinaryPrimitives.WriteInt32BigEndian(this.writeCache4, ((OSCInt)value).getValue());
+                    target.writeData(this.writeCache4);
                     break;
                 case OSCValueType.OSCFloat:
-                    result = BitConverter.GetBytes(((OSCFloat)value).getValue());
-                    if (BitConverter.IsLittleEndian)
-                    {
-                        Array.Reverse(result);
-                    }
-                    return result;
+                    target.updateHead(4);
+                    BinaryPrimitives.WriteSingleBigEndian(this.writeCache4, ((OSCFloat)value).getValue());
+                    target.writeData(this.writeCache4);
                     break;
                 case OSCValueType.OSCBlob:
-                    byte[] data = ((OSCBlob)value).getValue();
-                    result = new byte[data.Length];
-                    byte[] size=BitConverter.GetBytes(value.getByteSize());
-                    if (BitConverter.IsLittleEndian)
-                    {
-                        Array.Reverse(size);
-                    }
-                    int index=writeToByteArrayAtIndex(result, size, 0);
-                    writeToByteArrayAtIndex(result, data, index);
-                    return result;
+                    BinaryPrimitives.WriteInt32BigEndian(this.writeCache4, this.calculateOSCStringOverflowSize(((OSCBlob)value).getValue().Length));
+                    target.writeData(this.writeCache4);
+                    target.writeData(((OSCBlob)value).getValue());
                     break;
                 case OSCValueType.OSCLong:
-                    result = BitConverter.GetBytes(((OSCLong)value).getValue());
-                    if (BitConverter.IsLittleEndian)
-                    {
-                        Array.Reverse(result);
-                    }
-                    return result;
+                    BinaryPrimitives.WriteInt64BigEndian(this.writeCache8, ((OSCLong)value).getValue());
+                    target.writeData(this.writeCache8);
                     break;
                 case OSCValueType.OSCTimeTag:
-                    result = BitConverter.GetBytes(((OSCTimeTag)value).getValue());
-                    if (BitConverter.IsLittleEndian)
-                    {
-                        Array.Reverse(result);
-                    }
-                    return result;
+                    BinaryPrimitives.WriteInt64BigEndian(this.writeCache8, ((OSCTimeTag)value).getValue());
+                    target.writeData(this.writeCache8);
                     break;
                 case OSCValueType.OSCDouble:
-                    result = BitConverter.GetBytes(((OSCDouble)value).getValue());
-                    if (BitConverter.IsLittleEndian)
-                    {
-                        Array.Reverse(result);
-                    }
-                    return result;
+                    BinaryPrimitives.WriteDoubleBigEndian(this.writeCache8, ((OSCDouble)value).getValue());
+                    target.writeData(this.writeCache8);
                     break;
                 case OSCValueType.OSCNonstandardString:
-                    result = generateOSCString(((OSCNonstandardString)value).getValue());
-                    return result;
+                    GenerateAndWriteOSCString(((OSCNonstandardString)value).getValue(), target);
                     break;
                 case OSCValueType.OSCChar:
-                    return new byte[] { (byte)((OSCChar)value).getValue(), 0, 0, 0 };
+                    this.writecache1[0] = (byte)((OSCChar)value).getValue();
+                    target.writeData(writecache1);
+                    target.writeData(this.paddingBytes[3]);
                     break;
                 case OSCValueType.OSCRGBA:
-                    result = BitConverter.GetBytes(((OSCColor)value).getValue());
-                    if (BitConverter.IsLittleEndian)
-                    {
-                        Array.Reverse(result);
-                    }
-                    return result;
-
+                    BinaryPrimitives.WriteInt32BigEndian(this.writeCache4,((OSCColor)value).getValue());
+                    target.writeData(writeCache4);
                     break;
                 case OSCValueType.OSCMIDI:
-                    result = BitConverter.GetBytes(((OSCMIDI)value).getValue());
-                    if (BitConverter.IsLittleEndian)
-                    {
-                        Array.Reverse(result);
-                    }
-                    return result;
+                    BinaryPrimitives.WriteInt32BigEndian(this.writeCache4, ((OSCMIDI)value).getValue());
+                    target.writeData(writeCache4);
                     break;
                 default:
                     throw new Exception("invalid OSCValueType!");
-                    break;
+                    
             }
-            
+            return target;
         }
        
         private bool shouldGetOSCValueBytes(OSCValue value)
@@ -213,68 +268,70 @@ namespace CactusOSC
             {
                 case OSCValueType.OSCString:
                     return true;
-                    break;
+                    
                 case OSCValueType.OSCInt:
                     return true;
-                    break;
+                    
                 case OSCValueType.OSCFloat:
                     return true;
-                    break;
+                    
                 case OSCValueType.OSCBlob:
                     return true;
-                    break;
+                    
                 case OSCValueType.OSCLong:
                     return true;
-                    break;
+                    
                 case OSCValueType.OSCTimeTag:
                     return true;
-                    break;
+                    
                 case OSCValueType.OSCDouble:
                     return true;
-                    break;
+                    
                 case OSCValueType.OSCNonstandardString:
                     return true;
-                    break;
+                    
                 case OSCValueType.OSCChar:
                     return true;
-                    break;
+                    
                 case OSCValueType.OSCRGBA:
                     return true;
-                    break;
+                    
                 case OSCValueType.OSCMIDI:
                     return true;
-                    break;
+                    
                 case OSCValueType.OSCBool:
                     return false;
-                    break;
+                    
                 case OSCValueType.OSCNil:
                     return false;
-                    break;
+                    
                 case OSCValueType.OSCInfinum:
                     return false;
-                    break;
+                    
                 default:
                     throw new Exception("invalid OSCValueType!");
-                    break;
+                    
 
             }
         }
 
-        private byte[] generateArrayValueBytes(OSCArray array)
+        private rawOSCPackage generateArrayValueBytes(OSCArray array,rawOSCPackage target)
         {
-
-            byte[] data=new byte[array.getByteSize()];
-            int targetIndex = 0;
 
             Stack<OSCArray> arrayStack = new Stack<OSCArray>();
             Stack<int> arrayIndex = new Stack<int>();
 
-            arrayStack.Push(array);
-            while (arrayStack.Count > 0)
+
+
+            OSCArray currentArray = array;
+            OSCValue[] currentContents = currentArray.getRawValue();
+            int currentIndex = 0;
+
+            bool solving = true;
+
+            while (solving)
             {
-                OSCArray currentArray = arrayStack.Pop();
-                OSCValue[] currentContents = currentArray.getRawValue();
-                int currentIndex = 0;
+                
                 while (currentIndex < currentContents.Length)
                 {
                     if (currentContents[currentIndex].getOSCType() == OSCValueType.OSCArray)
@@ -291,7 +348,7 @@ namespace CactusOSC
                     {
                         if (this.shouldGetOSCValueBytes(currentContents[currentIndex]))
                         {
-                            targetIndex= this.writeToByteArrayAtIndex(data,this.getOSCValueBytes(currentContents[currentIndex]),targetIndex);
+                            this.getOSCValueBytes(currentContents[currentIndex],target);
                             currentIndex++;
                         }
                     }
@@ -305,53 +362,49 @@ namespace CactusOSC
 
 
                 }
+                else
+                {
+                    solving = false;
+                }
                 
             }
-            return data;
+            return target;
         }
 
-        private byte[] generateOSCValueBytes(OSCValue[] values)
+        private rawOSCPackage generateOSCValueBytes(OSCValue[] values, rawOSCPackage target)
         {
-            int dataSize = 0;
-            for(int index = 0; index< values.Length; index++)
-            {
-                dataSize += values[index].getByteSize();
-            }
-            byte[] dataBytes = new byte[dataSize];
-            int writeHead = 0;
-            
             for (int i = 0; i < values.Length; i++)
             {
                 if (values[i].getOSCType() == OSCValueType.OSCArray)
                 {
-                    writeHead=writeToByteArrayAtIndex(dataBytes, generateArrayValueBytes((OSCArray)values[i]),writeHead);
+                    generateArrayValueBytes((OSCArray)values[i], target);
                 }
                 else
                 {
                     if (this.shouldGetOSCValueBytes(values[i]))
                     {
-                        writeHead = writeToByteArrayAtIndex(dataBytes, getOSCValueBytes(values[i]), writeHead);
+                        getOSCValueBytes(values[i], target);
                     }
                 }
             }
-            return dataBytes;
+            return target;
         }
 
-        private string generateOSCValueTypeString(OSCValue[] values)
+        private rawOSCPackage generateOSCValueTypeString(OSCValue[] values,rawOSCPackage target)
         {
-            StringBuilder typeString = new StringBuilder();
+            
             for (int i = 0; i < values.Length; i++)
             {
                 if (values[i].getOSCType() == OSCValueType.OSCArray)
                 {
-                    typeString.Append(this.generateArrayTypeString((OSCArray)values[i]));
+                    this.generateArrayTypeString(((OSCArray)values[i]),target);
                 }
                 else
                 {
-                    typeString.Append(this.getOSCTypeString(values[i]));
+                    this.getOSCTypeString(values[i],target);
                 }
             }
-            return typeString.ToString();
+            return target;
         }
 
         private int calculateOSCStringSize(int textLength)
@@ -375,43 +428,139 @@ namespace CactusOSC
             return tempsize;
         }
 
+        private int calculateOSCStringOverflowSize(int textByteCount)
+        {
+            int tempsize = 0;
+            int overflow = textByteCount % 4;
+
+
+            if (overflow != 0)
+            {
+                tempsize = 4 - overflow;
+            }
+            
+            return tempsize;
+        }
+
         private byte[] generateOSCString(string text)
         {
-            byte[] bytes = new byte[this.calculateOSCStringSize(text.Length)];
-            int index= 0;
-            ReadOnlySpan<char> textSpan=text.AsSpan(0, text.Length);
-            for(int character=0; character<text.Length; character++ )
-            {
-                bytes[index] = (byte)textSpan[index];
-                index++;
-            }
-            for (int padding = index;padding<bytes.Length; padding++)
-            {
-                bytes[padding] = 0;
-            }
+            int textSize = Encoding.UTF8.GetByteCount(text);
+            byte[] bytes = new byte[this.calculateOSCStringSize(textSize)];
+            //ensure the padding is cleared
+            Array.Clear(bytes,textSize,bytes.Length-textSize);
+            //fast copy
+            Encoding.UTF8.GetBytes(text, 0, text.Length, bytes, 0);
+            
             return bytes;
         }
+        private int GenerateAndWriteOSCString(string text, rawOSCPackage target)
+        {
+            int byteCount = Encoding.UTF8.GetByteCount(text);
+            int totalSize = this.calculateOSCStringSize(byteCount);
+
+            
+            int written = Encoding.UTF8.GetBytes(text,0,Encoding.UTF8.GetByteCount(text),target.getRawData(),target.getHead());
+            target.updateHead(written);
+            target.writeData(this.nullByte);
+            
+            int paddingBytes = calculateOSCStringOverflowSize(written+1);
+            target.writeData(this.paddingBytes[paddingBytes]);
+
+            return written+paddingBytes;
+        }
+        
         //returns new current index
         private int writeToByteArrayAtIndex(byte[] target, byte[] source, int startIndex)
         {
-            int writeHead = startIndex;
-            for(int readHead=0; readHead<source.Length; readHead++)
-            {
-                target[writeHead] = source[readHead];
-                writeHead++;
-            }
-            return writeHead;
+            //dma copy
+            Buffer.BlockCopy(source, 0, target, startIndex, source.Length);
+            return startIndex+source.Length;
         }
 
-        public byte[] convertOSCMessageToByteArray(OSCMessage message)
+        public rawOSCPackage convertOSCMessageToByteArray(OSCMessage message,rawOSCPackage target)
         {
-            byte[] byteVersion = new byte[message.getSize()];
-
-            int byteVersionIndex = 0;
-            byteVersionIndex = writeToByteArrayAtIndex(byteVersion, generateOSCString(message.getAddress()), byteVersionIndex);
-            byteVersionIndex = writeToByteArrayAtIndex(byteVersion, generateOSCString(generateOSCValueTypeString(message.getValues())), byteVersionIndex);
-            byteVersionIndex = writeToByteArrayAtIndex(byteVersion, generateOSCValueBytes(message.getValues()), byteVersionIndex);
-            return byteVersion;
+            this.GenrateAndWriteOSCString(message.getAddress(), target);
+            generateOSCValueTypeString(message.getValues(),target);
+            generateOSCValueBytes(message.getValues(),target);
+            return target;
         }
+
+        
+        public byte[] convertOSCBundleToByteArray(OSCBundle bundle,rawOSCPackage target)
+        {
+            //need update still
+            byte[] data = new byte[bundle.getSize()];
+
+            Stack<OSCBundle> subBundleStack = new Stack<OSCBundle>();
+            
+            Stack<int> indexStack = new Stack<int>();
+
+
+            OSCBundle currentBundle = bundle;
+            OSCBundleElement[] currentContents = currentBundle.getRawElements();
+            int currentIndex = 0;
+
+            
+
+            
+            //write bundle ident
+            target.writeData(this.bundleIdent);
+            //writeTimeTag
+            BinaryPrimitives.WriteInt64BigEndian(this.writeCache8,bundle.getTimeTag());
+            target.writeData(this.writeCache8);
+
+            bool solving = true;
+            while (solving)
+            {
+
+                while (currentIndex < currentContents.Length)
+                {
+                    if (currentContents[currentIndex].getRawContents().getPackageType() == OSCPackageType.OSCBundle)
+                    {
+                        subBundleStack.Push(currentBundle);
+                        indexStack.Push(currentIndex + 1);
+
+
+                        currentBundle = ((OSCBundle)currentContents[currentIndex].getRawContents());
+                        currentIndex = 0;
+                        currentContents = currentBundle.getRawElements();
+                        BinaryPrimitives.WriteInt32BigEndian(this.writeCache4, currentBundle.getSize());
+                        target.writeData(this.writeCache4);
+                        target.writeData(this.bundleIdent);
+                        BinaryPrimitives.WriteInt64BigEndian(this.writeCache8,currentBundle.getTimeTag());
+                        target.writeData(this.writeCache8);
+
+                    }
+                    else
+                    {
+                        OSCBundleElement elementCache = currentContents[currentIndex];
+                        BinaryPrimitives.WriteInt32BigEndian(this.writeCache4, elementCache.getSize());
+                        target.writeData(this.writeCache4);
+                        this.convertOSCMessageToByteArray((OSCMessage)elementCache.getRawContents(),target);
+                        currentIndex++;
+
+                    }
+
+                }
+                if (subBundleStack.Count > 0)
+                {
+                    currentBundle = subBundleStack.Pop();
+                    currentContents = currentBundle.getRawElements();
+                    currentIndex = indexStack.Pop();
+
+
+                }
+                else
+                {
+                    solving = false;
+                }
+
+            }
+            return data;
+        
+        }
+        
+
+        
     }
 }

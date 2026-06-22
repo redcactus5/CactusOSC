@@ -75,7 +75,7 @@ namespace CactusOSC
         {
             this.value = value;
             //calculate the byte block size
-            int tempsize=this.value.Length+1;
+            int tempsize=Encoding.UTF8.GetByteCount(value)+1;
             if (tempsize > 0)
             {
                 int overflow = tempsize % 4;
@@ -155,6 +155,7 @@ namespace CactusOSC
 
     public class OSCBlob : OSCValue
     {
+        
         private byte[] value;
         public OSCBlob(byte[] value):base(OSCValueType.OSCBlob) {
         
@@ -176,9 +177,10 @@ namespace CactusOSC
             {
                 tempsize = 4;
             }
-            this.setByteSize(tempsize);
+            this.setByteSize(tempsize+4);
 
         }
+        
         public byte[] getValue()
         {
             return this.value;
@@ -273,7 +275,7 @@ namespace CactusOSC
         {
             this.value = value;
             //calculate the byte block size
-            int tempsize = this.value.Length+1;
+            int tempsize = Encoding.UTF8.GetByteCount(value) + 1;
             if (tempsize > 0)
             {
                 int overflow = tempsize % 4;
@@ -356,9 +358,9 @@ namespace CactusOSC
             this.setByteSize(4);
 
         }
-        public UInt32 getValue()
+        public int getValue()
         {
-            return BitConverter.ToUInt32(new byte[] {this.r,this.g,this.b, this.a});
+            return BitConverter.ToInt32(new byte[] {this.r,this.g,this.b, this.a});
         }
         public override string toString()
         {
@@ -394,9 +396,9 @@ namespace CactusOSC
             this.data2 = (byte)(rgba & 0xff);
             this.setByteSize(4);
         }
-        public UInt32 getValue()
+        public int getValue()
         {
-            return BitConverter.ToUInt32(new byte[] { this.port, this.status, this.data1, this.data2 });
+            return BitConverter.ToInt32(new byte[] { this.port, this.status, this.data1, this.data2 });
         }
         public override string toString()
         {
@@ -555,7 +557,7 @@ namespace CactusOSC
 
         protected int calculateOSCStringSize(int textLength)
         {
-            int tempsize = textLength+1;
+            int tempsize = textLength;
             if (tempsize > 0)
             {
                 int overflow = tempsize % 4;
@@ -606,7 +608,7 @@ namespace CactusOSC
             
             this.address = address;
             this.values= values;
-            int adressSize=this.calculateOSCStringSize(this.address.Length);
+            int adressSize=this.calculateOSCStringSize(Encoding.UTF8.GetByteCount(address)+1);
             //account for the comma that denotes its start
             int typeStringSize = 1;
             //calculate the type string size
