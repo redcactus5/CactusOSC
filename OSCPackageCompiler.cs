@@ -36,7 +36,7 @@ namespace CactusOSC
             if (dataToWrite.Length > 0)
             {
                 Buffer.BlockCopy(dataToWrite, 0, this.data, this.head, dataToWrite.Length);
-                this.head += this.data.Length;
+                this.head += dataToWrite.Length;
             }
             return dataToWrite.Length;
         }
@@ -47,7 +47,7 @@ namespace CactusOSC
             this.data= new byte[size];
         }
     }
-    internal partial class messageConverter
+    internal class OSCPackageCompiler
     {
         private byte[] openBracketBytes;
         private byte[] closeBracketBytes;
@@ -60,7 +60,7 @@ namespace CactusOSC
         private byte[] writeCache4;
         private byte[] writecache1;
 
-        public messageConverter()
+        public OSCPackageCompiler()
         {
             //init the constants and caches
             typeStrings = new byte[15][] { Encoding.UTF8.GetBytes("s"), Encoding.UTF8.GetBytes("i"), Encoding.UTF8.GetBytes("f"), Encoding.UTF8.GetBytes("b"), Encoding.UTF8.GetBytes("h"), Encoding.UTF8.GetBytes("t"), Encoding.UTF8.GetBytes("d"), Encoding.UTF8.GetBytes("S"), Encoding.UTF8.GetBytes("c"), Encoding.UTF8.GetBytes("r"), Encoding.UTF8.GetBytes("m"), Encoding.UTF8.GetBytes("T"), Encoding.UTF8.GetBytes("F"), Encoding.UTF8.GetBytes("N"), Encoding.UTF8.GetBytes("I") };
@@ -479,17 +479,17 @@ namespace CactusOSC
 
         public rawOSCPackage convertOSCMessageToByteArray(OSCMessage message,rawOSCPackage target)
         {
-            this.GenrateAndWriteOSCString(message.getAddress(), target);
+            this.GenerateAndWriteOSCString(message.getAddress(), target);
             generateOSCValueTypeString(message.getValues(),target);
             generateOSCValueBytes(message.getValues(),target);
             return target;
         }
 
         
-        public byte[] convertOSCBundleToByteArray(OSCBundle bundle,rawOSCPackage target)
+        public rawOSCPackage convertOSCBundleToByteArray(OSCBundle bundle,rawOSCPackage target)
         {
-            //need update still
-            byte[] data = new byte[bundle.getSize()];
+            
+            
 
             Stack<OSCBundle> subBundleStack = new Stack<OSCBundle>();
             
@@ -556,7 +556,7 @@ namespace CactusOSC
                 }
 
             }
-            return data;
+            return target;
         
         }
         

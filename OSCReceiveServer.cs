@@ -15,9 +15,9 @@ namespace CactusOSC
         private ConcurrentQueue<byte[]> messagePool;
         private CancellationTokenSource shutdownTrigger;
         private Task receiveTask;
-        private messageConverter converter;
+        private OSCPackageCompiler converter;
 
-        public OSCReceiveServer(messageConverter converter, string address, UInt16 port)
+        public OSCReceiveServer(OSCPackageCompiler converter, string address, UInt16 port)
         {
             this.address = address;
             this.port = port;

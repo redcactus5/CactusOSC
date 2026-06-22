@@ -16,9 +16,9 @@ namespace CactusOSC
         private CancellationTokenSource shutdownTrigger;
         private Task sendTask;
         ManualResetEventSlim finishedSend;
-        private messageConverter converter;
+        private OSCPackageCompiler converter;
 
-        public OSCSendServer(messageConverter converter, string address, UInt16 port)
+        public OSCSendServer(OSCPackageCompiler converter, string address, UInt16 port)
         {
 
             this.address = address;

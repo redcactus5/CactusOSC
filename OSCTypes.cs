@@ -349,7 +349,7 @@ namespace CactusOSC
             this.setByteSize(4);
 
         }
-        public OSCColor(UInt32 rgba):base(OSCValueType.OSCRGBA)
+        public OSCColor(int rgba):base(OSCValueType.OSCRGBA)
         {
             this.r = (byte)((rgba>>24) & 0xff);
             this.g = (byte)((rgba >> 16) & 0xff);
@@ -380,25 +380,26 @@ namespace CactusOSC
         private byte data1;
         private byte data2;
 
-        public OSCMIDI(byte r, byte g, byte b, byte a):base(OSCValueType.OSCMIDI)
+        public OSCMIDI(byte port, byte status, byte data1, byte data2):base(OSCValueType.OSCMIDI)
         {
-            this.port = r;
-            this.status = g;
-            this.data1 = b;
-            this.data2 = a;
+            this.port = port;
+            this.status = status;
+            this.data1 = data1;
+            this.data2 = data2;
             this.setByteSize(4);
         }
-        public OSCMIDI(UInt32 rgba):base(OSCValueType.OSCMIDI)
+        public OSCMIDI(int midiMessage):base(OSCValueType.OSCMIDI)
         {
-            this.port = (byte)((rgba >> 24) & 0xff);
-            this.status = (byte)((rgba >> 16) & 0xff);
-            this.data1 = (byte)((rgba >> 8) & 0xff);
-            this.data2 = (byte)(rgba & 0xff);
+            this.port = (byte)((midiMessage >> 24) & 0xff);
+            this.status = (byte)((midiMessage >> 16) & 0xff);
+            this.data1 = (byte)((midiMessage >> 8) & 0xff);
+            this.data2 = (byte)(midiMessage & 0xff);
             this.setByteSize(4);
         }
         public int getValue()
         {
-            return BitConverter.ToInt32(new byte[] { this.port, this.status, this.data1, this.data2 });
+            byte[] temp = new byte[] { this.port, this.status, this.data1, this.data2 };
+            return BitConverter.ToInt32(temp);
         }
         public override string toString()
         {
