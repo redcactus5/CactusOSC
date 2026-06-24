@@ -22,12 +22,16 @@ namespace CactusOSC
     {
 
     }
-    class invalidOSCStringException : invalidPackageException
+    class invalidOSCStringException : Exception
     {
 
     }
     class invalidTypestringException: invalidOSCStringException
     {
 
+    }
+
+    class OSCStringNotNullTerminatedException : invalidOSCStringException
+    {
     }
 }
