@@ -1,6 +1,5 @@
 ﻿using CactusOSC;
-
-
+using System.Buffers.Binary;
 using System.Text;
 
 namespace CactusOSC
@@ -32,6 +31,8 @@ namespace CactusOSC
         private OSCValueType oscType;
         private int size;
         private bool sizeSet;
+        private int typeStringSize;
+        private bool typeStringSizeSet;
         public  abstract string toString();
 
         public abstract OSCValue clone();
@@ -60,9 +61,26 @@ namespace CactusOSC
             }
         }
 
+        protected void setTypeStringSize(int size)
+        {
+            if (!this.typeStringSizeSet)
+            {
+                this.typeStringSize = size;
+                this.typeStringSizeSet = true;
+            }
+            else
+            {
+                throw new SizeAlreadySetException();
+            }
+        }
+
         public int getByteSize()
         {
             return this.size;
+        }
+        public int getTypeStringSize()
+        {
+            return this.typeStringSize;
         }
         
 
@@ -88,6 +106,7 @@ namespace CactusOSC
                 tempsize = 4;
             }
             this.setByteSize(tempsize);
+            this.setTypeStringSize(1);
         }
         
         public string getValue()
@@ -111,6 +130,7 @@ namespace CactusOSC
         {
             this.value = value;
             this.setByteSize(4);
+            this.setTypeStringSize(1);
         }
 
         public  int getValue()
@@ -135,6 +155,7 @@ namespace CactusOSC
         {
             this.value = value;
             this.setByteSize(4);
+            this.setTypeStringSize(1);
         }
 
         public  float getValue()
@@ -168,16 +189,14 @@ namespace CactusOSC
                 if (overflow != 0)
                 {
                     tempsize += 4- overflow;
-                    tempsize += 4;
+                    
                 }
                     
                 
             }
-            else
-            {
-                tempsize = 4;
-            }
+            
             this.setByteSize(tempsize+4);
+            this.setTypeStringSize(1);
 
         }
         
@@ -204,7 +223,8 @@ namespace CactusOSC
         {
             this.value = value;
             this.setByteSize(8);
-            
+            this.setTypeStringSize(1);
+
         }
         public long getValue()
         {
@@ -229,6 +249,7 @@ namespace CactusOSC
         {
             this.value = value;
             this.setByteSize(8);
+            this.setTypeStringSize(1);
         }
         public long getValue()
         {
@@ -251,6 +272,7 @@ namespace CactusOSC
         {
             this.value = value;
             this.setByteSize(8);
+            this.setTypeStringSize(1);
         }
         public double getValue()
         {
@@ -292,6 +314,7 @@ namespace CactusOSC
                 tempsize = 4;
             }
             this.setByteSize(tempsize);
+            this.setTypeStringSize(1);
         }
         public string getValue()
         {
@@ -317,6 +340,7 @@ namespace CactusOSC
         {
             this.value = value;
             this.setByteSize(4);
+            this.setTypeStringSize(1);
         }
         public char getValue()
         {
@@ -347,6 +371,7 @@ namespace CactusOSC
             this.b = b;
             this.a = a;
             this.setByteSize(4);
+            this.setTypeStringSize(1);
 
         }
         public OSCColor(int rgba):base(OSCValueType.OSCRGBA)
@@ -356,11 +381,12 @@ namespace CactusOSC
             this.b = (byte)((rgba >> 8) & 0xff);
             this.a = (byte)(rgba & 0xff);
             this.setByteSize(4);
+            this.setTypeStringSize(1);
 
         }
         public int getValue()
         {
-            return BitConverter.ToInt32(new byte[] {this.r,this.g,this.b, this.a});
+            return (((this.r << 24) & (0xff << 24)) | ((this.g << 16) & (0xff << 16)) | ((this.b << 8) & (0xff << 8)) | ((this.a) & 0xff));
         }
         public override string toString()
         {
@@ -387,6 +413,7 @@ namespace CactusOSC
             this.data1 = data1;
             this.data2 = data2;
             this.setByteSize(4);
+            this.setTypeStringSize(1);
         }
         public OSCMIDI(int midiMessage):base(OSCValueType.OSCMIDI)
         {
@@ -395,11 +422,11 @@ namespace CactusOSC
             this.data1 = (byte)((midiMessage >> 8) & 0xff);
             this.data2 = (byte)(midiMessage & 0xff);
             this.setByteSize(4);
+            this.setTypeStringSize(1);
         }
         public int getValue()
         {
-            byte[] temp = new byte[] { this.port, this.status, this.data1, this.data2 };
-            return BitConverter.ToInt32(temp);
+            return (((this.port << 24)&(0xff<<24)) | ((this.status << 16) & (0xff << 16)) | ((this.data1 << 8) & (0xff << 8)) | ((this.data2)&0xff)); ;
         }
         public override string toString()
         {
@@ -419,6 +446,7 @@ namespace CactusOSC
         
             this.value = value;
             this.setByteSize(0);
+            this.setTypeStringSize(1);
         }
         public bool getValue()
         {
@@ -460,6 +488,7 @@ namespace CactusOSC
         public OSCInfinitum():base(OSCValueType.OSCInfinum)
         {
             this.setByteSize(0);
+            this.setTypeStringSize(1);
         }
         
 
@@ -484,11 +513,14 @@ namespace CactusOSC
         {
             this.data = data;
             int tempsize = 0;
+            int tempTypeStringSize = 0;
             for (int index = 0; index < data.Length; index++) 
             {
                 tempsize += data[index].getByteSize();
+                tempTypeStringSize += data[index].getTypeStringSize();
             }
             this.setByteSize(tempsize);
+            this.setTypeStringSize(2+tempTypeStringSize);
         }
 
         public OSCValue[] getValue()
@@ -610,18 +642,18 @@ namespace CactusOSC
             this.address = address;
             this.values= values;
             int adressSize=this.calculateOSCStringSize(Encoding.UTF8.GetByteCount(address)+1);
-            //account for the comma that denotes its start
-            int typeStringSize = 1;
-            //calculate the type string size
-            typeStringSize += this.values.Length;
-            typeStringSize=this.calculateOSCStringSize(typeStringSize);
-            //calculate the data size
+            //account for the comma that denotes its start and the null terminator
+            int typeStringSize = 2;
+            //calculate the data size and typestring size
             int dataSize = 0;
             for(int index=0; index<this.values.Length; index++)
             {
                 dataSize += values[index].getByteSize();
+                typeStringSize += values[index].getTypeStringSize();
             }
             //calculate the final size
+
+            typeStringSize = this.calculateOSCStringSize(typeStringSize);
             this.setSize(adressSize+typeStringSize+dataSize);
             
         }
@@ -630,7 +662,7 @@ namespace CactusOSC
             this.address= address;
             this.values = Array.Empty<OSCValue>();
             //account for the type string
-            this.setSize(this.calculateOSCStringSize(address.Length)+calculateOSCStringSize(1));
+            this.setSize(this.calculateOSCStringSize(Encoding.UTF8.GetByteCount(address) + 1) +calculateOSCStringSize(2));
         }
         public string getAddress()
         {

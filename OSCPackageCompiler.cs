@@ -9,7 +9,7 @@ using System.Text;
 
 namespace CactusOSC
 {
-    public class rawOSCPackage
+    public class writerRawOSCPackage
     {
         private byte[] data;
         private int head;
@@ -41,7 +41,7 @@ namespace CactusOSC
             return dataToWrite.Length;
         }
 
-        public rawOSCPackage(int size)
+        public writerRawOSCPackage(int size)
         {
             this.head = 0;
             this.data= new byte[size];
@@ -78,7 +78,7 @@ namespace CactusOSC
 
         }
 
-        private rawOSCPackage generateArrayTypeString(OSCArray array,rawOSCPackage target)
+        private writerRawOSCPackage generateArrayTypeString(OSCArray array,writerRawOSCPackage target)
         {
 
             
@@ -142,7 +142,7 @@ namespace CactusOSC
             return target;
         }
 
-        private int getOSCTypeString(OSCValue value, rawOSCPackage target)
+        private int getOSCTypeString(OSCValue value, writerRawOSCPackage target)
         {
             switch (value.getOSCType())
             {
@@ -204,7 +204,7 @@ namespace CactusOSC
             
         }
 
-        private rawOSCPackage getOSCValueBytes(OSCValue value, rawOSCPackage target)
+        private writerRawOSCPackage getOSCValueBytes(OSCValue value, writerRawOSCPackage target)
         {
             
 
@@ -218,7 +218,6 @@ namespace CactusOSC
                     target.writeData(this.writeCache4);
                     break;
                 case OSCValueType.OSCFloat:
-                    target.updateHead(4);
                     BinaryPrimitives.WriteSingleBigEndian(this.writeCache4, ((OSCFloat)value).getValue());
                     target.writeData(this.writeCache4);
                     break;
@@ -315,7 +314,7 @@ namespace CactusOSC
             }
         }
 
-        private rawOSCPackage generateArrayValueBytes(OSCArray array,rawOSCPackage target)
+        private writerRawOSCPackage generateArrayValueBytes(OSCArray array,writerRawOSCPackage target)
         {
 
             Stack<OSCArray> arrayStack = new Stack<OSCArray>();
@@ -371,7 +370,7 @@ namespace CactusOSC
             return target;
         }
 
-        private rawOSCPackage generateOSCValueBytes(OSCValue[] values, rawOSCPackage target)
+        private writerRawOSCPackage generateOSCValueBytes(OSCValue[] values, writerRawOSCPackage target)
         {
             for (int i = 0; i < values.Length; i++)
             {
@@ -390,7 +389,7 @@ namespace CactusOSC
             return target;
         }
 
-        private rawOSCPackage generateOSCValueTypeString(OSCValue[] values,rawOSCPackage target)
+        private writerRawOSCPackage generateOSCValueTypeString(OSCValue[] values,writerRawOSCPackage target)
         {
             
             for (int i = 0; i < values.Length; i++)
@@ -453,7 +452,7 @@ namespace CactusOSC
             
             return bytes;
         }
-        private int GenerateAndWriteOSCString(string text, rawOSCPackage target)
+        private int GenerateAndWriteOSCString(string text, writerRawOSCPackage target)
         {
             int byteCount = Encoding.UTF8.GetByteCount(text);
             int totalSize = this.calculateOSCStringSize(byteCount);
@@ -477,7 +476,7 @@ namespace CactusOSC
             return startIndex+source.Length;
         }
 
-        public rawOSCPackage convertOSCMessageToByteArray(OSCMessage message,rawOSCPackage target)
+        public writerRawOSCPackage convertOSCMessageToByteArray(OSCMessage message,writerRawOSCPackage target)
         {
             this.GenerateAndWriteOSCString(message.getAddress(), target);
             generateOSCValueTypeString(message.getValues(),target);
@@ -486,7 +485,7 @@ namespace CactusOSC
         }
 
         
-        public rawOSCPackage convertOSCBundleToByteArray(OSCBundle bundle,rawOSCPackage target)
+        public writerRawOSCPackage convertOSCBundleToByteArray(OSCBundle bundle,writerRawOSCPackage target)
         {
             
             
