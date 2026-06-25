@@ -8,17 +8,14 @@ namespace CactusOSC
     {
 
     }
-    class unfinshedPackageException : Exception
-    {
-
-    }
+    
 
 
     class indexAlreadyPopulatedException : Exception
     {
 
     }
-    class unfinishedDataSegmentException:unfinshedPackageException { }
+    class unfinishedDataSegmentException:invalidPackageException { }
 
     class invalidPackageException: Exception
     {
