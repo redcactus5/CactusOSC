@@ -96,242 +96,43 @@ namespace CactusOSC
     }
     internal class OSCPackageParser
     {
-        private HashSet<char> possibleOSCTypes; 
+        private bool[] possibleOSCTypes; 
         private byte[] bundleTag;
 
         public OSCPackageParser()
         {
             this.bundleTag=this.generateOSCString("#bundle");
-            this.possibleOSCTypes = new HashSet<char> { 's', 'i', 'f', 'b', 'h', 't', 'd', 'S', 'c', 'r', 'm', 'T', 'F', 'N', 'I' };
+            //generate a fast lookup table for typestring valudation
+            this.possibleOSCTypes = new bool[256];
+            for (int i = 0; i < possibleOSCTypes.Length; i++) {
+                possibleOSCTypes[i] = false;
+            }
+            this.possibleOSCTypes[(byte)'s'] = true;
+            this.possibleOSCTypes[(byte)'i'] = true;
+            this.possibleOSCTypes[(byte)'f'] = true;
+            this.possibleOSCTypes[(byte)'b'] = true;
+            this.possibleOSCTypes[(byte)'h'] = true;
+            this.possibleOSCTypes[(byte)'t'] = true;
+            this.possibleOSCTypes[(byte)'d'] = true;
+            this.possibleOSCTypes[(byte)'S'] = true;
+            this.possibleOSCTypes[(byte)'c'] = true;
+            this.possibleOSCTypes[(byte)'r'] = true;
+            this.possibleOSCTypes[(byte)'m'] = true;
+            this.possibleOSCTypes[(byte)'T'] = true;
+            this.possibleOSCTypes[(byte)'F'] = true;
+            this.possibleOSCTypes[(byte)'N'] = true;
+            this.possibleOSCTypes[(byte)'I'] = true;
 
         }
 
        
-        private struct oscListIndexIdentifyer
+        private bool isTypeStringCharValid(char character)
         {
-            public NodeEntryType type;
-            public int index;
-            public oscListIndexIdentifyer(int index, NodeEntryType type){
-                this.type=type;
-                this.index =index;
-
-            }
+            return this.possibleOSCTypes[(byte)character];
         }
+       
 
-        private enum NodeEntryType
-        {
-            oscValue,
-            subList
-        }
-        private class oscListNode
-        {
-            private oscListIndexIdentifyer[] types;
-            private oscListNode[] subLists;
-            private OSCValue[] oscValues;
-            private int typesIndex;
-            private int subListIndex;
-            private int oscValuesIndex;
-
-            public oscListNode(int sublists,int oscValues)
-            {
-                this.types=new oscListIndexIdentifyer[sublists+oscValues];
-                this.subLists = new oscListNode[sublists];
-                this.oscValues=new OSCValue[oscValues];
-                this.typesIndex=0;
-                this.oscValuesIndex=0;
-                this.subListIndex = 0;
-
-            }
-
-            public void addOSCValue(OSCValue value)
-            {
-                if (typesIndex < types.Length && oscValuesIndex < this.oscValues.Length)
-                {
-                    this.oscValues[this.oscValuesIndex] = value;
-                    this.types[this.typesIndex] = new oscListIndexIdentifyer(this.oscValuesIndex, NodeEntryType.oscValue);
-                    this.oscValuesIndex++;
-                    this.typesIndex++;
-                }
-                else
-                {
-                    throw new IndexOutOfRangeException();
-                }
-
-            }
-
-            public void addSubList(int subLists,int oscValues)
-            {
-                if(typesIndex < types.Length && subListIndex < this.subLists.Length)
-                {
-                    this.subLists[this.subListIndex]=new oscListNode(subLists, oscValues);
-                    this.types[this.typesIndex]=new oscListIndexIdentifyer(this.subListIndex, NodeEntryType.subList);
-                    this.subListIndex++;
-                    this.typesIndex++;
-                }
-                else
-                {
-                    throw new IndexOutOfRangeException();
-                }
-                
-            }
-
-            public NodeEntryType getType(int index)
-            {
-                if ((index < 0) || (index > this.types.Length - 1))
-                {
-                    throw new IndexOutOfRangeException();
-                }
-                return this.types[index].type;
-            }
-
-            public oscListNode getSubList(int index)
-            {
-                if ((index < 0) || (index > this.types.Length - 1))
-                {
-                    throw new IndexOutOfRangeException();
-                }
-                if (this.types[index].type != NodeEntryType.subList)
-                {
-                    throw new OSCListNodeReturnTypeMismatchException();
-                }
-                return this.subLists[this.types[index].index];
-                
-            }
-
-            public OSCValue GetOSCValue(int index)
-            {
-                if ((index < 0) || (index > this.types.Length - 1))
-                {
-                    throw new IndexOutOfRangeException();
-                }
-                if (this.types[index].type != NodeEntryType.oscValue)
-                {
-                    throw new OSCListNodeReturnTypeMismatchException();
-                }
-                return this.oscValues[this.types[index].index];
-            }
-                
-        }
         
-        private struct oscListNodeSize
-        {
-            public int subLists;
-            public int OSCValues;
-            public oscListNodeSize(int subLists, int OSCValues)
-            {
-                this.subLists = subLists;
-                this.OSCValues = OSCValues;
-            }
-        }
-        private oscListNodeSize calculateOSCListNodeSize(ReadOnlySpan<char> typeString)
-        {
-            
-            int depth = 0;
-            int subLists = 0;
-            int OSCValues = 0;
-
-
-            for (int character = 0; character < typeString.Length; character++)
-            {
-                if (depth > 0)
-                {
-                    if (typeString[character] == '[')
-                    {
-                        depth++;
-                    }
-                    else if (typeString[character] == ']')
-                    {
-                        depth--;
-                    }
-                }
-                else if (depth == 0)
-                {
-                    if (typeString[character] == '[')
-                    {
-                        depth++;
-                        subLists++;
-                    }
-                    else if (this.possibleOSCTypes.Contains(typeString[character]))
-                    {
-                        OSCValues++;
-                    }
-                }
-                else
-                {
-                    break;
-                }
-            }
-            return new oscListNodeSize(subLists, OSCValues);
-        }
-
-        private startEndPair findFirstSublist(ReadOnlySpan<char> typeStringSegment)
-        {
-            //init our vars
-            int mode = 0;
-            int depth = 0;
-            int start = 0; 
-            int end=0;
-            //loop throug the type string
-            for(int character = 0;character < typeStringSegment.Length;character++ )
-            {
-
-                switch (mode)
-                {
-                    //search for the first start of a list
-                    case 0:
-                        if (typeStringSegment[character] == '[')
-                        {
-                            //go to list contents processing mode
-                            mode = 1;
-                            //mark down where the start is
-                            start=character;
-                        }
-                        break;
-                    case 1:
-                        //if we are in a sublist
-                        if(depth > 0)
-                        {
-                            //check if there is yet another sublist insside the sublist
-                            if (typeStringSegment[character] == '[')
-                            {
-                                //mark down that we are going deeper
-                                depth++;
-                            //check if we are exiting a sublist
-                            }else if (typeStringSegment[character] == ']')
-                            {
-                                //mark down that we are surfacing
-                                depth--;
-                            }
-                        //if we arent in a sublist
-                        }else if (depth == 0)
-                        {
-                            //check if there is a sublist inside this list
-                            if (typeStringSegment[character] == '[')
-                            {
-                                //mark down that we are entering a sublist to ignore
-                                depth++;
-                            //check if we have hit the end of the list
-                            }else if(typeStringSegment[character] == ']')
-                            {
-                                //mark down the end of the sublist
-                                end = character;
-                            }
-                        }
-                        break;
-                    default:
-                        throw new IndexOutOfRangeException();
-                            
-                }
-            }
-            //if we found a sublist
-            if ((start > 0) || (end > 0))
-            {
-                //return a start end pair for it
-                return new startEndPair(start, end);
-            }
-            //otherwise return an empty start end pair
-            return new startEndPair(-1,-1);
-        }
 
         //self explanitory, just checks if the array of bytes is a valid utf8 string
         public static bool IsValidUtf8(ReadOnlySpan<byte> bytes)
@@ -530,22 +331,231 @@ namespace CactusOSC
                     throw new invalidTypestringException();
             }
         }
-        private oscListNode extractOSCMessageArgumentData(string typeString, ReadOnlySpan<byte> data)
-        {
-            int typeStringIndex = 0;
-            ReadOnlySpan<char> typeStringSpan = typeString.AsSpan();
 
-            Stack<oscListNode> Lists = new Stack<oscListNode>();
-            oscListNodeSize currentNodeSize = this.calculateOSCListNodeSize(typeStringSpan);
-            oscListNode currentNode = new oscListNode(currentNodeSize.subLists,currentNodeSize.OSCValues);
+        
+        
 
-            while (typeStringIndex < typeString.Length)
+        struct listTreeBuilderNode {
+            
+            
+            public int childLists;
+            public int values;
+            public int parentIndex;
+            public int index;
+            public bool isLeaf;
+            public int[] childrenIndexes;
+            public int childrenIndexesIndex;
+            public listTreeBuilderNode( int parentIndex,int childLists,int values,int index)
             {
                 
+                this.parentIndex = parentIndex;
+                this.values = values;
+                this.childLists = childLists;
+                this.isLeaf = true;
+                this.index = index;
+                this.childrenIndexesIndex = 0;
             }
-            
         }
 
+        private struct findListStructureReturn
+        {
+            public listTreeBuilderNode[] nodes;
+            public int maxDepth;
+            public findListStructureReturn(listTreeBuilderNode[] nodes, int maxDepth)
+            {
+                this.maxDepth = maxDepth;
+                this.nodes = nodes;
+            }
+        }
+
+        private findListStructureReturn findListStructure(ReadOnlySpan<char> typeString)
+        {
+
+            int listCount = 0;
+            for (int i = 0; i < typeString.Length; i++)
+            {
+                if (typeString[i] == '[')
+                {
+                    listCount++;
+                }
+            }
+
+            listTreeBuilderNode[] nodes = new listTreeBuilderNode[listCount+1];
+            Stack<int> lastNodeIndex = new Stack<int>();
+            Stack<int> indexInParent = new Stack<int>();
+            int maxDepth = 0;
+            int depth = 0;
+            
+            nodes[0] = new listTreeBuilderNode(-1, 0, 0,-1);
+            int TopOfNodeList = 1;
+            int currentIndex = 0;
+            int currentParentIndex = 0;
+            
+            
+            listTreeBuilderNode currentNode;
+
+
+            int leafcount = listCount;
+            for (int i = 0; i<typeString.Length; i++)
+            {
+                if (typeString[i] == '[')
+                {
+                    depth++;
+                    if(depth > maxDepth)
+                    {
+                        maxDepth = depth;
+                    }
+                    nodes[TopOfNodeList]=new listTreeBuilderNode(currentIndex,0,0,currentParentIndex);
+                    indexInParent.Push(currentParentIndex+1);
+                    currentParentIndex = 0;
+                    nodes[currentIndex].isLeaf = false;
+                    leafcount--;
+                    
+                    lastNodeIndex.Push(currentIndex);
+
+                    nodes[currentIndex].childLists = nodes[currentIndex].childLists + 1;
+                    currentIndex = TopOfNodeList;
+                    TopOfNodeList++;
+                }
+                else if (typeString[i] == ']')
+                {
+                    depth--;
+                    nodes[currentIndex].childrenIndexes = new int[nodes[currentIndex].childLists];
+                    currentIndex = lastNodeIndex.Pop();
+                    currentParentIndex=indexInParent.Pop();
+
+                }
+                else
+                {
+                    nodes[currentIndex].values= nodes[currentIndex].values + 1;
+                    currentParentIndex++;
+                }
+            }
+            
+            for(int list=0; list<nodes.Length; list++)
+            {
+                if (nodes[list].parentIndex!=-1)
+                {
+                    nodes[nodes[list].parentIndex].childrenIndexes[nodes[nodes[list].parentIndex].childrenIndexesIndex] = list;
+                    nodes[nodes[list].parentIndex].childrenIndexesIndex = nodes[nodes[list].parentIndex].childrenIndexesIndex + 1;
+                }
+            }
+
+            
+
+            return new findListStructureReturn(nodes,maxDepth);
+        }
+        
+        private OSCValue[] buildOSCMessageValuesList(ReadOnlySpan<char> typestring,Span<byte> argumentData)
+        {
+            findListStructureReturn structureData= this.findListStructure(typestring);
+            int stackHeightMax = structureData.maxDepth;
+            listTreeBuilderNode[] listStructure = structureData.nodes;
+
+            OSCValue[][] unfinishedArrays = new OSCValue[stackHeightMax][];
+            int unfinishedArraysPointer = 0;
+            int[] unfinishedArraysIndex= new int[stackHeightMax];
+            int unfinishedArraysIndexPointer = 0;
+            listTreeBuilderNode[] framingStack = new listTreeBuilderNode[stackHeightMax];
+            int framingStackPointer = 0;
+            int[] framingStackIndexes = new int[stackHeightMax];
+            int framingStackIndexesPointer = 0;
+            listTreeBuilderNode currentNode = listStructure[0];
+            OSCValue[] baseList= new OSCValue[currentNode.childLists+currentNode.values];
+            OSCValue[] currentList=Array.Empty<OSCValue>();
+            int baseListIndex = 0;
+            int currentArrayIndex = 0;
+            int depth = 0;
+            int byteIndex = 0;
+            int currentFramingStackIndex = 0;
+            OSCvalueConversionReturn dataReturn;
+            for (int character = 0; character < typestring.Length; character++)
+            {
+                if (depth > 0)
+                {
+                    if (this.isTypeStringCharValid(typestring[character]))
+                    {
+
+                        dataReturn = this.getOSCValueFromBytes(typestring[character], argumentData.Slice(byteIndex, argumentData.Length));
+                        byteIndex += dataReturn.bytesConsumed;
+                        currentList[currentArrayIndex] = dataReturn.returnValue;
+                        currentArrayIndex++;
+                    }
+                    else if (typestring[character] == '[')
+                    {
+                        depth++;
+                        framingStack[framingStackPointer]=currentNode;
+                        framingStackPointer++;
+                        currentNode = listStructure[currentNode.childrenIndexes[currentFramingStackIndex]];
+                        currentFramingStackIndex++;
+                        framingStackIndexes[framingStackIndexesPointer]=currentFramingStackIndex;
+                        framingStackIndexesPointer++;
+                        currentFramingStackIndex = 0;
+                        unfinishedArrays[unfinishedArraysPointer]=currentList;
+                        unfinishedArraysPointer++;
+                        currentList = new OSCValue[currentNode.childLists + currentNode.values];
+                        unfinishedArraysIndex[unfinishedArraysIndexPointer] = currentArrayIndex;
+                        unfinishedArraysIndexPointer++;
+                        currentArrayIndex = 0;
+                    }
+                    else if (typestring[character] == ']')
+                    {
+                        depth--;
+                        currentNode = framingStack[framingStackPointer];
+                        framingStackPointer--;
+                        currentFramingStackIndex = framingStackIndexes[framingStackIndexesPointer];
+                        framingStackIndexesPointer--;
+                        OSCArray tempVlaue = new OSCArray(currentList);
+                        currentList = unfinishedArrays[unfinishedArraysPointer];
+                        unfinishedArraysIndexPointer--;
+                        currentArrayIndex = unfinishedArraysIndex[unfinishedArraysIndexPointer];
+                        unfinishedArraysIndexPointer--;
+                        if (depth > 0)
+                        {
+                            currentList[currentArrayIndex] = tempVlaue;
+                            currentArrayIndex++;
+                        }
+                        else
+                        {
+                            baseList[baseListIndex] = tempVlaue;
+                            baseListIndex++;
+                        }
+
+                    }
+                    else
+                    {
+                        if (this.isTypeStringCharValid(typestring[character]))
+                        {
+                            dataReturn = this.getOSCValueFromBytes(typestring[character], argumentData.Slice(byteIndex, argumentData.Length));
+                            byteIndex += dataReturn.bytesConsumed;
+                            baseList[baseListIndex] = dataReturn.returnValue;
+                            baseListIndex++;
+                        }
+                        else if (typestring[character] == '[')
+                        {
+                            depth++;
+                            framingStack[framingStackPointer]=currentNode;
+                            framingStackPointer++;
+                            currentNode = listStructure[currentNode.childrenIndexes[currentFramingStackIndex]];
+                            currentFramingStackIndex++;
+                            framingStackIndexes[framingStackIndexesPointer]=currentFramingStackIndex;
+                            framingStackIndexesPointer++;
+                            currentFramingStackIndex = 0;
+                            currentList = new OSCValue[currentNode.childLists + currentNode.values];
+
+                        }
+                        else
+                        {
+                            throw new invalidTypestringException();
+                        }
+
+                    }
+                }
+            }
+            return baseList;
+
+        }
+        
         
 
 

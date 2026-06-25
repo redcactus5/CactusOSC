@@ -13,6 +13,13 @@ namespace CactusOSC
 
     }
 
+
+    class indexAlreadyPopulatedException : Exception
+    {
+
+    }
+    class unfinishedDataSegmentException:unfinshedPackageException { }
+
     class invalidPackageException: Exception
     {
 
