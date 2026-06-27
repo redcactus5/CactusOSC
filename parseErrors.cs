@@ -4,38 +4,52 @@ using System.Text;
 
 namespace CactusOSC
 {
-    class invalidBundleException: invalidPackageException
+    class parserStuckException: InvalidBundleException
+    {
+
+    }
+    class InvalidBundleException: InvalidPackageException
     {
 
     }
     
-
-
-    class indexAlreadyPopulatedException : Exception
-    {
-
-    }
-    class unfinishedDataSegmentException:invalidPackageException { }
-
-    class invalidPackageException: Exception
+    class IncompleteBundleException: InvalidBundleException
     {
 
     }
 
+    class IndexAlreadyPopulatedException : Exception
+    {
+
+    }
+    class UnfinishedDataSegmentException:InvalidPackageException { }
+
+    class InvalidPackageException: Exception
+    {
+
+    }
+
+    class IncompleteOSCDataException: InvalidPackageException
+    {
+
+    }
+    class InvalidOSCAddressException : InvalidPackageException
+    {
+    }
     class OSCListNodeReturnTypeMismatchException: Exception
     {
 
     }
-    class invalidOSCStringException : Exception
+    class InvalidOSCStringException : Exception
     {
 
     }
-    class invalidTypestringException: invalidOSCStringException
+    class InvalidTypestringException: InvalidOSCStringException
     {
 
     }
 
-    class OSCStringNotNullTerminatedException : invalidOSCStringException
+    class OSCStringNotNullTerminatedException : InvalidOSCStringException
     {
     }
 }

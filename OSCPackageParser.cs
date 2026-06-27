@@ -1,9 +1,12 @@
 ﻿
 
 using System.Buffers.Binary;
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.Design;
 using System.Security.Cryptography;
 using System.Text;
+using System.Web;
 
 namespace CactusOSC
 {
@@ -141,12 +144,12 @@ namespace CactusOSC
             }
             if (padding != expectedPadding)
             {
-                throw new invalidOSCStringException();
+                throw new InvalidOSCStringException();
             }
             //fence post bug fixed by the +1
             
             if(!IsValidUtf8(stringData.Slice(0, end))){
-                throw new invalidOSCStringException();
+                throw new InvalidOSCStringException();
             }
 
             return new int[] { end, padding };
@@ -182,57 +185,97 @@ namespace CactusOSC
                 this.returnValue = returnValue;
             }
         }
-        private OSCvalueConversionReturn getOSCValueFromBytes(char typeChar, ReadOnlySpan<byte> data)
+        private OSCvalueConversionReturn getOSCValueFromBytes(char typeChar, ReadOnlySpan<byte> data, int startIndex)
         {
             OSCStringConversionReturn temp;
             switch (typeChar) {
                 case 's':
-                    temp = this.extractOSCString(data);
+                    temp = this.extractOSCString(data.Slice(startIndex));
                     return new OSCvalueConversionReturn(temp.bytesRead, new OSCString(temp.value));
                 case 'i':
-                    return new OSCvalueConversionReturn(4, new OSCInt(BinaryPrimitives.ReadInt32BigEndian(data.Slice(0, 4))));
+                    if ((startIndex + 4) > data.Length)
+                    {
+                        throw new IncompleteOSCDataException();
+                    }
+                    return new OSCvalueConversionReturn(4, new OSCInt(BinaryPrimitives.ReadInt32BigEndian(data.Slice(startIndex, 4))));
                 case 'f':
-                    return new OSCvalueConversionReturn(4, new OSCFloat(BinaryPrimitives.ReadSingleBigEndian(data.Slice(0, 4))));
+                    if ((startIndex + 4) > data.Length)
+                    {
+                        throw new IncompleteOSCDataException();
+                    }
+                    return new OSCvalueConversionReturn(4, new OSCFloat(BinaryPrimitives.ReadSingleBigEndian(data.Slice(startIndex, 4))));
                 case 'b':
-                    int length = BinaryPrimitives.ReadInt32BigEndian(data.Slice(0, 4));
-                    return new OSCvalueConversionReturn(length + 4, new OSCBlob(data.Slice(4, length).ToArray()));
+                    if ((startIndex + 4) > data.Length)
+                    {
+                        throw new IncompleteOSCDataException();
+                    }
+                    int length = BinaryPrimitives.ReadInt32BigEndian(data.Slice(startIndex, 4));
+                    if ((startIndex + 4 + length) > data.Length)
+                    {
+                        throw new IncompleteOSCDataException();
+                    }
+                    return new OSCvalueConversionReturn(length + 4, new OSCBlob(data.Slice(startIndex+4, length).ToArray()));
                 case 'h':
-                    return new OSCvalueConversionReturn(8, new OSCLong(BinaryPrimitives.ReadInt64BigEndian(data.Slice(0, 8))));
+                    if ((startIndex + 8) > data.Length)
+                    {
+                        throw new IncompleteOSCDataException();
+                    }
+                    return new OSCvalueConversionReturn(8, new OSCLong(BinaryPrimitives.ReadInt64BigEndian(data.Slice(startIndex, 8))));
                 case 't':
-                    return new OSCvalueConversionReturn(8, new OSCTimeTag(BinaryPrimitives.ReadInt64BigEndian(data.Slice(0, 8))));
+                    if ((startIndex + 8) > data.Length)
+                    {
+                        throw new IncompleteOSCDataException();
+                    }
+                    return new OSCvalueConversionReturn(8, new OSCTimeTag(BinaryPrimitives.ReadInt64BigEndian(data.Slice(startIndex, 8))));
                 case 'd':
-                    return new OSCvalueConversionReturn(8, new OSCDouble(BinaryPrimitives.ReadDoubleBigEndian(data.Slice(0, 8))));
+                    if ((startIndex + 8) > data.Length)
+                    {
+                        throw new IncompleteOSCDataException();
+                    }
+                    return new OSCvalueConversionReturn(8, new OSCDouble(BinaryPrimitives.ReadDoubleBigEndian(data.Slice(startIndex, 8))));
                 case 'S':
-                    temp = this.extractOSCString(data);
+                    temp = this.extractOSCString(data.Slice(startIndex));
                     return new OSCvalueConversionReturn(temp.bytesRead, new OSCNonstandardString(temp.value));
                 case 'c':
-                    if ((data[1] == 0) && (data[2] == 0) && (data[3] == 0))
+                    if ((startIndex + 4) > data.Length)
                     {
-                        return new OSCvalueConversionReturn(4, new OSCChar((char)data[0]));
+                        throw new IncompleteOSCDataException();
+                    }
+                    if ((data[startIndex+1] == 0) && (data[startIndex + 2] == 0) && (data[startIndex + 3] == 0))
+                    {
+                        return new OSCvalueConversionReturn(4, new OSCChar((char)data[startIndex]));
                     }
                     else
                     {
-                        throw new invalidPackageException();
+                        throw new InvalidPackageException();
                     }
                 case 'r':
+                    if ((startIndex + 4) > data.Length)
+                    {
+                        throw new IncompleteOSCDataException();
+                    }
                     //because of how i encoded colors and midi, they are natively big endian even on little endian systems, and as such must be treated differently depending on system
                     if (BitConverter.IsLittleEndian)
                     {
-                        return new OSCvalueConversionReturn(4, new OSCColor(BinaryPrimitives.ReadInt32LittleEndian(data.Slice(0, 4))));
+                        return new OSCvalueConversionReturn(4, new OSCColor(BinaryPrimitives.ReadInt32LittleEndian(data.Slice(startIndex, 4))));
                     }
                     else
                     {
-                        return new OSCvalueConversionReturn(4, new OSCColor(BinaryPrimitives.ReadInt32BigEndian((data.Slice(0, 4)))));
+                        return new OSCvalueConversionReturn(4, new OSCColor(BinaryPrimitives.ReadInt32BigEndian((data.Slice(startIndex, 4)))));
                     }
                 case 'm':
+                    if ((startIndex + 4) > data.Length)
+                    {
+                        throw new IncompleteOSCDataException();
+                    }
                     //because of how i encoded colors and midi, they are natively big endian even on little endian systems, and as such must be treated differently depending on system
                     if (BitConverter.IsLittleEndian)
                     {
-                        return new OSCvalueConversionReturn(4, new OSCMIDI(BinaryPrimitives.ReadInt32LittleEndian((data.Slice(0, 4)))));
+                        return new OSCvalueConversionReturn(4, new OSCMIDI(BinaryPrimitives.ReadInt32LittleEndian((data.Slice(startIndex, 4)))));
                     }
                     else
                     {
-                        return new OSCvalueConversionReturn(4, new OSCMIDI(BinaryPrimitives.ReadInt32BigEndian(data.Slice(0, 4))));
+                        return new OSCvalueConversionReturn(4, new OSCMIDI(BinaryPrimitives.ReadInt32BigEndian(data.Slice(startIndex, 4))));
                     }
                 case 'T':
                     return new OSCvalueConversionReturn(0, new OSCBool(true));
@@ -243,7 +286,7 @@ namespace CactusOSC
                 case 'I':
                     return new OSCvalueConversionReturn(0, new OSCInfinitum());
                 default:
-                    throw new invalidTypestringException();
+                    throw new InvalidTypestringException();
             }
         }
 
@@ -296,8 +339,10 @@ namespace CactusOSC
             }
 
             listTreeBuilderNode[] nodes = new listTreeBuilderNode[listCount+1];
-            Stack<int> lastNodeIndex = new Stack<int>();
-            Stack<int> indexInParent = new Stack<int>();
+            int[] lastNodeIndex = new int[listCount];
+            int lastNodeIndexPointer = 0;
+            int[] indexInParent = new int[listCount];
+            int indexInParentPointer = 0;
             int maxDepth = 0;
             int depth = 0;
             
@@ -307,7 +352,7 @@ namespace CactusOSC
             int currentParentIndex = 0;
             
             
-            listTreeBuilderNode currentNode;
+            
 
 
             int leafcount = listCount;
@@ -321,12 +366,14 @@ namespace CactusOSC
                         maxDepth = depth;
                     }
                     nodes[TopOfNodeList]=new listTreeBuilderNode(currentIndex,0,0,currentParentIndex);
-                    indexInParent.Push(currentParentIndex+1);
+                    indexInParent[indexInParentPointer]=(currentParentIndex+1);
+                    indexInParentPointer++;
                     currentParentIndex = 0;
                     nodes[currentIndex].isLeaf = false;
                     leafcount--;
                     
-                    lastNodeIndex.Push(currentIndex);
+                    lastNodeIndex[lastNodeIndexPointer]=currentIndex;
+                    lastNodeIndexPointer++;
 
                     nodes[currentIndex].childLists = nodes[currentIndex].childLists + 1;
                     currentIndex = TopOfNodeList;
@@ -336,8 +383,10 @@ namespace CactusOSC
                 {
                     depth--;
                     nodes[currentIndex].childrenIndexes = new int[nodes[currentIndex].childLists];
-                    currentIndex = lastNodeIndex.Pop();
-                    currentParentIndex=indexInParent.Pop();
+                    currentIndex = lastNodeIndex[lastNodeIndexPointer];
+                    lastNodeIndexPointer--;
+                    currentParentIndex=indexInParent[indexInParentPointer];
+                    indexInParentPointer--;
 
                 }
                 else
@@ -361,8 +410,10 @@ namespace CactusOSC
             return new findListStructureReturn(nodes,maxDepth);
         }
         
-        private OSCValue[] buildOSCMessageValuesList(ReadOnlySpan<char> typestring,Span<byte> argumentData)
+        private OSCValue[] buildOSCMessageValuesList(ReadOnlySpan<char> typestring,ReadOnlySpan<byte> argumentData)
         {
+            this.validateTypeString(typestring);
+            
             findListStructureReturn structureData= this.findListStructure(typestring);
             int stackHeightMax = structureData.maxDepth;
             listTreeBuilderNode[] listStructure = structureData.nodes;
@@ -384,14 +435,15 @@ namespace CactusOSC
             int byteIndex = 0;
             int currentFramingStackIndex = 0;
             OSCvalueConversionReturn dataReturn;
-            for (int character = 0; character < typestring.Length; character++)
+            //start at one to avoid the comma
+            for (int character = 1; character < typestring.Length; character++)
             {
                 if (depth > 0)
                 {
                     if (this.isTypeStringCharValid(typestring[character]))
                     {
 
-                        dataReturn = this.getOSCValueFromBytes(typestring[character], argumentData.Slice(byteIndex, argumentData.Length));
+                        dataReturn = this.getOSCValueFromBytes(typestring[character], argumentData,byteIndex);
                         byteIndex += dataReturn.bytesConsumed;
                         currentList[currentArrayIndex] = dataReturn.returnValue;
                         currentArrayIndex++;
@@ -441,7 +493,7 @@ namespace CactusOSC
                     {
                         if (this.isTypeStringCharValid(typestring[character]))
                         {
-                            dataReturn = this.getOSCValueFromBytes(typestring[character], argumentData.Slice(byteIndex, argumentData.Length));
+                            dataReturn = this.getOSCValueFromBytes(typestring[character], argumentData,byteIndex);
                             byteIndex += dataReturn.bytesConsumed;
                             baseList[baseListIndex] = dataReturn.returnValue;
                             baseListIndex++;
@@ -461,7 +513,7 @@ namespace CactusOSC
                         }
                         else
                         {
-                            throw new invalidTypestringException();
+                            throw new InvalidTypestringException();
                         }
 
                     }
@@ -470,6 +522,75 @@ namespace CactusOSC
             return baseList;
 
         }
+
+
+
+        private void validateTypeString(ReadOnlySpan<char> rawTypeString)
+        {
+            bool valid = true;
+            Stack<bool> levelClosed = new Stack<bool>();
+            int depth = 0;
+            bool closed = true;
+            int openCount = 0;
+            int closeCount = 0;
+            int dataLength = 0;
+            if (rawTypeString[0] != ',')
+            {
+                throw new InvalidTypestringException();
+            }
+            for (int i = 1; i < rawTypeString.Length; i++)
+            {
+                if (rawTypeString[i] == '[')
+                {
+                    closed = false;
+                    depth++;
+                    levelClosed.Push(closed);
+                    openCount++;
+                    closed = true;
+                }
+                else if (rawTypeString[i] == ']')
+                {
+                    closed = true;
+                    if (depth > 1)
+                    {
+                        throw new InvalidTypestringException();
+                    }
+                    depth--;
+                    closed = levelClosed.Pop();
+                    closeCount++;
+                }
+                else if (!this.isTypeStringCharValid(rawTypeString[i]))
+                {
+                    throw new InvalidTypestringException();
+                }
+            }
+            if ((depth > 0) || (openCount != closeCount) || (!closed)) {
+                throw new InvalidTypestringException();
+            }
+        }
+        
+
+        private OSCMessage convertOSCByteArrayToMessage(ReadOnlySpan<byte> rawData)
+        {
+            int byteIndex = 0;
+            string address = "";
+            string typeString = "";
+            OSCValue[] arguments= Array.Empty<OSCValue>();
+            OSCStringConversionReturn stringReturn = this.extractOSCString(rawData);
+            byteIndex += stringReturn.bytesRead;
+            address = stringReturn.value;
+            if (address[0] != '/')
+            {
+                throw new InvalidOSCAddressException();
+            }
+            stringReturn = this.extractOSCString(rawData.Slice(byteIndex));
+            byteIndex+= stringReturn.bytesRead;
+            typeString = stringReturn.value;
+            arguments = this.buildOSCMessageValuesList(typeString, rawData.Slice(byteIndex));
+
+            return new OSCMessage(address, arguments);
+        }
+
         
         
 
@@ -477,10 +598,31 @@ namespace CactusOSC
 
 
 
+        public OSCPackage convertOSCByteArrayToPackage(ReadOnlySpan<byte> packageBytes)
+        {
+            int byteIndex = 0;
 
+            while (packageBytes[byteIndex] == '\0')
+            {
+                byteIndex++;
+            }
+            
+            OSCStringConversionReturn typeTest = this.extractOSCString(packageBytes.Slice(byteIndex));
+            if (typeTest.value == "#bundle")
+            {
+                return this.convertOSCByteArrayToBundle(packageBytes);
 
-
-
+            } else if (typeTest.value[0] == '/')
+            {
+                return this.convertOSCByteArrayToMessage(packageBytes);
+            }
+            else
+            {
+                throw new InvalidPackageException();
+            }
+            
+            
+        }
 
 
 
