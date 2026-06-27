@@ -16,7 +16,7 @@ namespace CactusOSC
     {
         private bool[] possibleOSCTypes; 
         private byte[] bundleTag;
-
+        private UTF8Encoding utf8;
         public OSCPackageParser()
         {
             this.bundleTag=this.generateOSCString("#bundle");
@@ -40,7 +40,7 @@ namespace CactusOSC
             this.possibleOSCTypes[(byte)'F'] = true;
             this.possibleOSCTypes[(byte)'N'] = true;
             this.possibleOSCTypes[(byte)'I'] = true;
-
+            this.utf8 = new UTF8Encoding(false, true);
         }
 
        
@@ -50,25 +50,7 @@ namespace CactusOSC
         }
        
 
-        
-
-        //self explanitory, just checks if the array of bytes is a valid utf8 string
-        public static bool IsValidUtf8(ReadOnlySpan<byte> bytes)
-        {
-            try
-            {   //set up a canary decoder
-                UTF8Encoding utf8 = new UTF8Encoding(false, true); 
-                //try to decode
-                utf8.GetString(bytes);
-                //if not erros occured its valid
-                return true;
-            }
-            catch (DecoderFallbackException)
-            {
-                //if the canary threw then its invalid
-                return false;
-            }
-        }
+       
 
 
         private int[] validateOSCStringDataAndGetLengths(ReadOnlySpan<byte> stringData)
@@ -148,9 +130,7 @@ namespace CactusOSC
             }
             //fence post bug fixed by the +1
             
-            if(!IsValidUtf8(stringData.Slice(0, end))){
-                throw new InvalidOSCStringException();
-            }
+            
 
             return new int[] { end, padding };
             
@@ -171,8 +151,14 @@ namespace CactusOSC
         {
             //encoding is [0]==length, [1]==padding
             int[] lengths = this.validateOSCStringDataAndGetLengths(stringData);
+            try
+            {
+                return new OSCStringConversionReturn(this.utf8.GetString(stringData.Slice(0, lengths[0])), lengths[0] + lengths[1]);
+            }
+            catch (DecoderFallbackException){
+                throw new InvalidOSCStringException();
+            }
             
-            return new OSCStringConversionReturn(Encoding.UTF8.GetString(stringData.Slice(0, lengths[0])), lengths[0] + lengths[1]);
 
         }
 
@@ -591,38 +577,263 @@ namespace CactusOSC
             return new OSCMessage(address, arguments);
         }
 
-        
-        
 
 
 
-
-
-        public OSCPackage convertOSCByteArrayToPackage(ReadOnlySpan<byte> packageBytes)
+        private int findBundleCountAndCoarseValidate(ReadOnlySpan<byte> rawBundle)
         {
-            int byteIndex = 0;
+            int readHead = 0;
+            int mode = 0;
+            int elementSize = 0;
+            int bundleCount = 0;
+            bool shouldBreak=false;
+            OSCStringConversionReturn stringReturn;
+            while (readHead < rawBundle.Length) {
+                switch (mode)
+                {
+                    case 0:
+                        //get through any padding
+                        if (readHead >= rawBundle.Length)
+                        {
+                            throw new InvalidBundleException();
+                        }
+                        if (rawBundle[readHead] == '\0')
+                        {
+                            readHead++;
+                        }
+                        else
+                        {
+                            mode = 1;
+                        }
+                        break;
+                    case 1:
+                        //look for a bundle start and if found skip to the contents
+                        if (readHead > rawBundle.Length)
+                        {
+                            throw new InvalidBundleException();
+                        }
+                        stringReturn = this.extractOSCString(rawBundle.Slice(readHead));
+                        if (stringReturn.value.Length <= 0)
+                        {
+                            throw new InvalidBundleException();
+                        }
+                        if (stringReturn.value == "#bundle")
+                        {
+                            readHead += stringReturn.bytesRead + 8;
+                            bundleCount++;
+                            mode = 2;
+                        }
+                        break;
+                    case 2:
+                        if (readHead + 4 >= rawBundle.Length)
+                        {
+                            shouldBreak = true;
+                            break;
+                        }
+                        elementSize = BinaryPrimitives.ReadInt32BigEndian(rawBundle.Slice(readHead, 4));
+                        if (elementSize < 0)
+                        {
+                            throw new InvalidBundleException();
+                        }
+                            
+                        readHead += 4;
+                        
+                        stringReturn = this.extractOSCString(rawBundle.Slice(readHead));
+                        if (stringReturn.value.Length <= 0)
+                        {
+                            throw new InvalidBundleException();
+                        }
+                        if (stringReturn.value == "#bundle")
+                        {
+                            bundleCount++;
+                            readHead += 8;
+                        }
+                        else if (stringReturn.value[0]=='/')
+                        {
+                            if(readHead+elementSize > rawBundle.Length)
+                            {
+                                throw new InvalidBundleException();
+                            }
+                            readHead += elementSize;
+                        }
+                        else
+                        {
+                            throw new InvalidBundleException();
+                        }
+                        break;
+                }
+                if (shouldBreak)
+                {
+                    break;
+                }      
 
-            while (packageBytes[byteIndex] == '\0')
-            {
-                byteIndex++;
             }
-            
-            OSCStringConversionReturn typeTest = this.extractOSCString(packageBytes.Slice(byteIndex));
-            if (typeTest.value == "#bundle")
-            {
-                return this.convertOSCByteArrayToBundle(packageBytes);
+            return bundleCount; 
 
-            } else if (typeTest.value[0] == '/')
-            {
-                return this.convertOSCByteArrayToMessage(packageBytes);
-            }
-            else
-            {
-                throw new InvalidPackageException();
-            }
-            
-            
         }
+
+        
+
+        struct BundleTreeBuilderNode
+        {
+            public int childBundles;
+            public int messages;
+            public int parentIndex;
+            public int index;
+            public int bundleIndex;
+            public int[] childrenIndexes;
+            public int childrenIndexesIndex;
+            public long timeStamp;
+            public int size;
+            public BundleTreeBuilderNode(int parentIndex, int bundleIndex, int childBundles, int messages, int index, long timeStamp,int size)
+            {
+
+                this.parentIndex = parentIndex;
+                this.messages = messages;
+                this.childBundles = childBundles;
+                this.bundleIndex = bundleIndex;
+                this.index = index;
+                this.childrenIndexes = Array.Empty<int>();
+                this.childrenIndexesIndex = 0;
+                this.timeStamp = timeStamp;
+                this.size = size;
+            }
+        }
+
+        private BundleTreeBuilderNode[] findBundleStructure(ReadOnlySpan<byte> rawBundle)
+        {
+            int readHead = 0;
+            int mode = 0;
+            int bundleCount = this.findBundleCountAndCoarseValidate(rawBundle);
+            long timeStamp = 0;
+
+            BundleTreeBuilderNode[] nodes = new BundleTreeBuilderNode[bundleCount];
+            
+
+            int currentBundle = 0;
+            int newestBundle = 1;
+            int currentItemSize = 0;
+
+            int[] bundleStack= new int[bundleCount];
+            int[] bundleEnd= new int[bundleCount];
+            
+            int bundleStackIndex = 0;
+
+            OSCStringConversionReturn stringReturn;
+
+            while (readHead < rawBundle.Length)
+            {
+                if ((nodes[currentBundle] != null) && (bundleEnd[bundleStackIndex]==readHead))
+                {
+                    nodes[currentBundle].childrenIndexes = new int[nodes[currentBundle].childBundles];
+                    currentBundle = bundleStack[bundleStackIndex];
+                    bundleStackIndex--;
+                }
+                else
+                {
+                    switch (mode)
+                    {
+                        case 0:
+                            if (rawBundle[readHead] == '\0')
+                            {
+                                readHead++;
+                            }
+                            else
+                            {
+                                mode = 1;
+                            }
+                            break;
+                        case 1:
+                            stringReturn = this.extractOSCString(rawBundle.Slice(readHead));
+                            if (stringReturn.value == "#bundle")
+                            {
+                                readHead += stringReturn.bytesRead;
+                                timeStamp = BinaryPrimitives.ReadInt64BigEndian(rawBundle.Slice(readHead, 8));
+                                readHead += 8;
+
+
+                                //create the base node
+                                nodes[0] = new BundleTreeBuilderNode(-1, (readHead - stringReturn.bytesRead) - 8, 0, 0, 0, timeStamp, rawBundle.Length - readHead);
+
+                                mode = 2;
+                            }
+                            else
+                            {
+                                throw new InvalidBundleException();
+                            }
+                            break;
+                        case 2:
+                            if (readHead + 4 > rawBundle.Length)
+                            {
+                                throw new InvalidBundleException();
+                            }
+                            currentItemSize = BinaryPrimitives.ReadInt32BigEndian(rawBundle.Slice(readHead, 4));
+                            readHead += 4;
+                            if (readHead + currentItemSize > rawBundle.Length)
+                            {
+                                throw new InvalidBundleException();
+                            }
+                            stringReturn = this.extractOSCString(rawBundle.Slice(readHead));
+                            if (stringReturn.value[0] == '/')
+                            {
+                                nodes[currentBundle].messages += 1;
+                                readHead += currentItemSize;
+                            }
+                            else if (stringReturn.value == "#bundle")
+                            {
+
+                                timeStamp = BinaryPrimitives.ReadInt64BigEndian(rawBundle.Slice(readHead, 8));
+
+                                nodes[currentBundle].childBundles +=  1;
+                                bundleStack[bundleStackIndex] = currentBundle;
+                                bundleEnd[bundleStackIndex] = readHead + currentItemSize;
+                                bundleStackIndex++;
+                                nodes[newestBundle] = new BundleTreeBuilderNode(currentBundle, readHead, 0, 0, newestBundle, timeStamp, currentItemSize);
+                                readHead += currentItemSize + 8;
+
+                                currentBundle = newestBundle;
+                                newestBundle++;
+                            }
+                            else
+                            {
+                                throw new InvalidBundleException();
+                            }
+
+                            break;
+
+                    }
+                }
+            }
+            for (int i = 0; i < nodes.Length; i++)
+            {
+                if (nodes[i].parentIndex != -1)
+                {
+                    BundleTreeBuilderNode nodeCache0 = nodes[i];
+                    BundleTreeBuilderNode nodeCache1 = nodes[nodeCache0.parentIndex];
+
+                    nodeCache1.childrenIndexes[nodeCache0.childrenIndexesIndex] = i;
+                    nodeCache1.childrenIndexesIndex+= 1;
+                }
+                
+            }
+            return nodes;
+
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
