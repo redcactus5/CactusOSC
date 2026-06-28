@@ -33,6 +33,10 @@ namespace CactusOSC
     {
 
     }
+    class InvalidOSCDataException : InvalidPackageException
+    {
+
+    }
     class InvalidOSCAddressException : InvalidPackageException
     {
     }
