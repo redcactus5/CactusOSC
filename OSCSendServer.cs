@@ -16,16 +16,16 @@ namespace CactusOSC
         private CancellationTokenSource shutdownTrigger;
         private Task sendTask;
         ManualResetEventSlim finishedSend;
-        private OSCPackageCompiler converter;
+        private channelManager converterBridge;
 
-        public OSCSendServer(OSCPackageCompiler converter, string address, UInt16 port)
+        public OSCSendServer(channelManager converterBridge, string address, UInt16 port)
         {
 
             this.address = address;
             this.port = port;
-            this.messageQueue = Channel.CreateUnbounded<byte[]>();
+            this.converterBridge = converterBridge;
             finishedSend = new ManualResetEventSlim(false);
-            this.converter = converter;
+            this.messageQueue=converterBridge.getPackagesToSendChannel();
         }
         public void start()
         {
@@ -95,15 +95,7 @@ namespace CactusOSC
 
         }
 
-        public void sendMessage(byte[] message)
-        {
-            if (sendServer == null)
-            {
-                throw new InvalidOperationException("Server not started");
-            }
-            this.messageQueue.Writer.TryWrite(message);
-
-        }
+       
     }
     
 }

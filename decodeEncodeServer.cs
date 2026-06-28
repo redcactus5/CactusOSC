@@ -13,29 +13,30 @@ namespace CactusOSC
         private Task DecoderServer;
 
         private Channel<OSCPackage> packagesToEncode;
-        private Channel<byte[]> packagesToDecode;
         private ConcurrentQueue<OSCPackage> decodedPackages;
-        private ConcurrentQueue<byte[]> encodedPackages;
+        private channelManager serverBridge;
 
         private CancellationTokenSource shutDownTrigger;
 
         private ConcurrentQueue<OSCPackageCompiler> compilers;
         private OSCPackageInterpreter interpreter;
         private SemaphoreSlim encodeGate;
-        private SemaphoreSlim decodeGate;
+        
 
-        public decodeEncodeServer()
+        public decodeEncodeServer(channelManager serverBridge)
         {
-            this.packagesToDecode = Channel.CreateUnbounded<byte[]>();
+            
             this.packagesToEncode = Channel.CreateUnbounded<OSCPackage>();
             this.decodedPackages =  new ConcurrentQueue<OSCPackage>();
-            this.encodedPackages = new ConcurrentQueue<byte[]>();
+            
             
             this.compilers = new ConcurrentQueue<OSCPackageCompiler>();
             
             this.interpreter = new OSCPackageInterpreter();
             this.encodeGate = new SemaphoreSlim(1);
-            this.decodeGate = new SemaphoreSlim(1);
+            
+            this.serverBridge = serverBridge;
+            
         }
 
         public async Task start()
@@ -50,26 +51,9 @@ namespace CactusOSC
                 }
             }
             this.shutDownTrigger = new CancellationTokenSource();
-            encodedPackages.Clear();
+            
             decodedPackages.Clear();
-            if(this.decodeGate.CurrentCount == 0)
-            {
-                this.decodeGate.Release();
-            }
-            if(this.encodeGate.CurrentCount == 0)
-            {
-                this.encodeGate.Release();
-            }
-            if (this.packagesToDecode != null)
-            {
-                this.packagesToDecode.Writer.Complete();
-            }
-            this.packagesToDecode = Channel.CreateUnbounded<byte[]>();
-            if(this.packagesToEncode != null)
-            {
-                this.packagesToEncode.Writer.Complete();
-            }
-            this.packagesToEncode = Channel.CreateUnbounded<OSCPackage>();
+            
 
             this.EncoderServer = this.encodeService();
             this.DecoderServer = this.DecodingService();
@@ -85,14 +69,7 @@ namespace CactusOSC
             }
         }
 
-        public bool tryGetEncodedPackage(out byte[] target)
-        {
-            return this.encodedPackages.TryDequeue(out target);
-        }
-        public bool tryGetDecodedPackage(out OSCPackage target)
-        {
-            return this.decodedPackages.TryDequeue(out target);
-        }
+        
 
         public void enqueuePackageArrayEncoding(OSCPackage[] packageList)
         {
@@ -112,23 +89,9 @@ namespace CactusOSC
             writer.WriteAsync(package).AsTask().Wait();
         }
 
-        public void enqueuePackageArrayDecoding(byte[][] packageList)
-        {
-            decodeGate.Wait();
-            ChannelWriter<byte[]> writer = this.packagesToDecode.Writer;
-            for (int i = 0; i < packageList.Length; i++)
-            {
-                writer.WriteAsync(packageList[i]).AsTask().Wait();
-            }
+        
 
-            decodeGate.Release();
-        }
-
-        public void enqueuePackageDecoding(byte[] package)
-        {
-            ChannelWriter<byte[]> writer = this.packagesToDecode.Writer;
-            writer.WriteAsync(package).AsTask().Wait();
-        }
+        
 
 
         private byte[] encodePackage(OSCPackage package)
@@ -164,7 +127,7 @@ namespace CactusOSC
 
         private async Task DecodingService()
         {
-            ChannelReader<byte[]> reader = packagesToDecode.Reader;
+            ChannelReader<byte[]> reader = this.serverBridge.getReceivedPackagesChannel();
             byte[][] input=new byte[1024][];
             int inputIndex = 0;
             
@@ -175,8 +138,7 @@ namespace CactusOSC
             while (!this.shutDownTrigger.IsCancellationRequested)
             {
                 await reader.WaitToReadAsync(shutDownTrigger.Token);
-                await decodeGate.WaitAsync();
-                decodeGate.Release();
+                
                 
                 while(reader.TryRead(out inputCache))
                 {
@@ -249,7 +211,7 @@ namespace CactusOSC
 
                 for (int i = 0; i < inputIndex; i++)
                 {
-                    this.encodedPackages.Enqueue(finishArray[i]);
+                    this.serverBridge.transferPackageToSend(finishArray[i]);
                 }
                 inputIndex = 0;
             }

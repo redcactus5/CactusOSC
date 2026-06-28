@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading.Channels;
 
 namespace CactusOSC
 {
@@ -12,19 +13,17 @@ namespace CactusOSC
         UdpClient receiveServer;
         private string address;
         private UInt16 port;
-        private ConcurrentQueue<byte[]> messagePool;
+        private Channel<byte[]> messagePool;
         private CancellationTokenSource shutdownTrigger;
         private Task receiveTask;
-        private OSCPackageCompiler converter;
+        private channelManager converterBridge;
 
-        public OSCReceiveServer(OSCPackageCompiler converter, string address, UInt16 port)
+        public OSCReceiveServer(channelManager converterBridge, string address, UInt16 port)
         {
             this.address = address;
             this.port = port;
-            this.messagePool = new ConcurrentQueue<byte[]>();
-            this.converter = converter;
-            this.start();
-
+            this.converterBridge = converterBridge;
+            this.messagePool = converterBridge.getReceivedPackagesChannel();
 
         }
 
@@ -42,15 +41,16 @@ namespace CactusOSC
         
         private async Task receiveOSC()
         {
+            ChannelWriter<byte[]> writer =this.messagePool.Writer;
             while (!this.shutdownTrigger.IsCancellationRequested)
             {
                 try
                 {
                     UdpReceiveResult message = await receiveServer.ReceiveAsync();
-                    
 
 
-                    this.messagePool.Enqueue(message.Buffer);
+
+                    writer.WriteAsync(message.Buffer).AsTask().Wait();
                 }
                 catch (ObjectDisposedException)
                 {
