@@ -50,8 +50,7 @@
               "RelativeToolTip": "parseErrors.cs",
               "ViewState": "AgIAAA8AAAAAAAAAAAA7wCMAAAARAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-06-22T23:14:33.589Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-06-22T23:14:33.589Z"
             },
             {
               "$type": "Document",
@@ -61,7 +60,7 @@
               "RelativeDocumentMoniker": "OSCPackageInterpreter.cs",
               "ToolTip": "C:\\Users\\roboc\\Desktop\\misc\\programming\\c#\\CactusOSC\\OSCPackageInterpreter.cs",
               "RelativeToolTip": "OSCPackageInterpreter.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAMkAAAA6AAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABUAAAAJAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2026-06-22T06:17:46.126Z",
               "EditorCaption": ""
@@ -74,7 +73,7 @@
               "RelativeDocumentMoniker": "OSCPackageCompiler.cs",
               "ToolTip": "C:\\Users\\roboc\\Desktop\\misc\\programming\\c#\\CactusOSC\\OSCPackageCompiler.cs",
               "RelativeToolTip": "OSCPackageCompiler.cs",
-              "ViewState": "AgIAABQAAAAAAAAAAAAcwLoBAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAADICAAAAAAAAAAAAABIAAAAJAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2026-06-16T07:05:13.588Z",
               "EditorCaption": ""
@@ -99,7 +98,7 @@
               "RelativeDocumentMoniker": "OSCServer.cs",
               "ToolTip": "C:\\Users\\roboc\\Desktop\\misc\\programming\\c#\\CactusOSC\\OSCServer.cs",
               "RelativeToolTip": "OSCServer.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAgAAAAIAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2026-06-16T07:10:00.856Z",
               "EditorCaption": ""
