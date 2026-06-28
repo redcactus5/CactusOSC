@@ -44,7 +44,7 @@ namespace CactusOSC
     {
 
     }
-    class InvalidOSCStringException : Exception
+    class InvalidOSCStringException : InvalidPackageException
     {
 
     }
