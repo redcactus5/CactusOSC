@@ -23,7 +23,7 @@ namespace CactusOSC
         OSCArray
     }
 
-    public class SizeAlreadySetException : Exception;
+    
 
     public abstract class OSCValue
     {

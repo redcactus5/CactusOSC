@@ -4,6 +4,14 @@ using System.Text;
 
 namespace CactusOSC
 {
+    public class serverAlreadyStartedException: Exception
+    {
+
+    }
+    public class serverNotStartedException: Exception
+    {
+
+    }
     class parserStuckException: InvalidBundleException
     {
 
@@ -55,5 +63,9 @@ namespace CactusOSC
 
     class OSCStringNotNullTerminatedException : InvalidOSCStringException
     {
+    }
+    public class SizeAlreadySetException : Exception
+    {
+
     }
 }

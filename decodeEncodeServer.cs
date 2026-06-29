@@ -71,11 +71,11 @@ namespace CactusOSC
 
         
 
-        public void enqueuePackageArrayEncoding(OSCPackage[] packageList)
+        public void enqueuePackageListEncoding(List<OSCPackage> packageList)
         {
             encodeGate.Wait();
             ChannelWriter<OSCPackage> writer = this.packagesToEncode.Writer;
-            for (int i = 0; i < packageList.Length; i++)
+            for (int i = 0; i < packageList.Count; i++)
             {
                 writer.WriteAsync(packageList[i]).AsTask().Wait();
             }
@@ -90,9 +90,22 @@ namespace CactusOSC
         }
 
         
-
+        public bool tryGetDecodedPackage(out OSCPackage package)
+        {
+            return this.decodedPackages.TryDequeue(out package);
+        }
         
+        public List<OSCPackage> getDecodedPackageList()
+        {
+            List<OSCPackage> tempMailbox = new List<OSCPackage>(this.decodedPackages.Count);
+            OSCPackage packageCache;
+            while(this.decodedPackages.TryDequeue(out packageCache))
+            {
+                tempMailbox.Add(packageCache);
+            }
+            return tempMailbox;
 
+        }
 
         private byte[] encodePackage(OSCPackage package)
         {

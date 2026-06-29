@@ -6,7 +6,7 @@ using System.Text;
 
 namespace CactusOSC
 {
-    public class RawOSCPackage
+    internal class RawOSCPackage
     {
         private byte[] data;
         private int head;

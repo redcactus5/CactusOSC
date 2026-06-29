@@ -34,7 +34,15 @@ namespace CactusOSC
             {
                 receiveServer.Close();
             }
-            //this.receiveServer = new UdpClient(this.address, this.port);
+            if (this.address == null)
+            {
+                this.receiveServer = new UdpClient(this.port);
+            }
+            else
+            {
+                this.receiveServer = new UdpClient(this.address, this.port);
+            }
+            
             
             this.receiveTask = Task.Run(receiveOSC);
         }
@@ -75,16 +83,6 @@ namespace CactusOSC
             this.receiveServer.Close();
         }
 
-        public List<byte[]> getMessages()
-        {
-            byte[] messageCache;
-            List<byte[]> received = new List<byte[]>();
-            while (messagePool.TryDequeue(out messageCache))
-            {
-                received.Add(messageCache);
-            }
-
-            return received;
-        }
+        
     }
 }
