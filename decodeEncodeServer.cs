@@ -2,6 +2,8 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Security.AccessControl;
 using System.Text;
 using System.Threading.Channels;
 
@@ -21,7 +23,11 @@ namespace CactusOSC
         private ConcurrentQueue<OSCPackageCompiler> compilers;
         private OSCPackageInterpreter interpreter;
         private SemaphoreSlim encodeGate;
-        
+
+        private TaskCompletionSource<bool> encodeFinishedTcs;
+        private int inFlightCount;
+        private SemaphoreSlim inFlightCountGate;
+
 
         public decodeEncodeServer(channelManager serverBridge)
         {
@@ -36,6 +42,10 @@ namespace CactusOSC
             this.encodeGate = new SemaphoreSlim(1);
             
             this.serverBridge = serverBridge;
+
+            this.inFlightCountGate = new SemaphoreSlim(1);
+            
+            
             
         }
 
@@ -58,6 +68,16 @@ namespace CactusOSC
             this.EncoderServer = this.encodeService();
             this.DecoderServer = this.DecodingService();
 
+            if (this.encodeFinishedTcs != null)
+            {
+                this.encodeFinishedTcs.SetResult(true);
+                this.encodeFinishedTcs = null;
+            }
+            this.encodeFinishedTcs=new TaskCompletionSource<bool>();
+            this.inFlightCount = 0;
+            this.inFlightCountGate=new SemaphoreSlim(1);
+
+
         }
 
 
@@ -66,27 +86,47 @@ namespace CactusOSC
             if (!this.shutDownTrigger.IsCancellationRequested)
             {
                 this.shutDownTrigger.Cancel();
+                
             }
+            if (this.inFlightCountGate.CurrentCount ==0)
+            {
+                this.inFlightCountGate.Release();
+            }
+            
         }
 
         
 
-        public void enqueuePackageListEncoding(List<OSCPackage> packageList)
+        public async Task enqueuePackageListEncoding(List<OSCPackage> packageList)
         {
-            encodeGate.Wait();
+            await encodeGate.WaitAsync();
             ChannelWriter<OSCPackage> writer = this.packagesToEncode.Writer;
+            await this.inFlightCountGate.WaitAsync();
+            this.inFlightCount += packageList.Count;
+            if (this.encodeFinishedTcs == null)
+            {
+                this.encodeFinishedTcs=new TaskCompletionSource<bool>();
+            }
+            this.inFlightCountGate.Release();
             for (int i = 0; i < packageList.Count; i++)
             {
-                writer.WriteAsync(packageList[i]).AsTask().Wait();
+                await writer.WriteAsync(packageList[i]);
             }
             
             encodeGate.Release();
         }
 
-        public void enqueuePackageEncoding(OSCPackage package)
+        public async Task enqueuePackageEncoding(OSCPackage package)
         {
             ChannelWriter<OSCPackage> writer = this.packagesToEncode.Writer;
-            writer.WriteAsync(package).AsTask().Wait();
+            await this.inFlightCountGate.WaitAsync();
+            this.inFlightCount++;
+            if (this.encodeFinishedTcs == null)
+            {
+                this.encodeFinishedTcs = new TaskCompletionSource<bool>();
+            }
+            this.inFlightCountGate.Release();
+             await writer.WriteAsync(package);
         }
 
         
@@ -105,6 +145,11 @@ namespace CactusOSC
             }
             return tempMailbox;
 
+        }
+
+        public async Task waitForEncodequeueFinish()
+        {
+            await this.encodeFinishedTcs.Task;
         }
 
         private byte[] encodePackage(OSCPackage package)
@@ -147,7 +192,7 @@ namespace CactusOSC
             byte[] inputCache;
             
             OSCPackage[] finishArray=new OSCPackage[1024];
-            OSCPackage packageCache;
+            
             while (!this.shutDownTrigger.IsCancellationRequested)
             {
                 await reader.WaitToReadAsync(shutDownTrigger.Token);
@@ -169,12 +214,14 @@ namespace CactusOSC
                     
                     try
                     {
-                        packageCache = this.decodePackage(input[currentElement]);
+                        OSCPackage packageCache = this.decodePackage(input[currentElement]);
                         finishArray[currentElement] = packageCache;
                     }
-                    catch(InvalidPackageException)
+                    catch(InvalidPackageException e)
                     {
                         finishArray[currentElement] = null;
+                        Console.WriteLine(e);
+                        
                     }
                     
                 });
@@ -226,6 +273,17 @@ namespace CactusOSC
                 {
                     this.serverBridge.transferPackageToSend(finishArray[i]);
                 }
+                await this.inFlightCountGate.WaitAsync();
+                if(this.encodeFinishedTcs != null)
+                {
+                    this.inFlightCount -= inputIndex;
+                    if (this.inFlightCount == 0)
+                    {
+                        this.encodeFinishedTcs.SetResult(true);
+                        this.encodeFinishedTcs = null;
+                    }
+                }
+                this.inFlightCountGate.Release();
                 inputIndex = 0;
             }
         }

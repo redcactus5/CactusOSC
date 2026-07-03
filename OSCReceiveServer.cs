@@ -52,10 +52,11 @@ namespace CactusOSC
             ChannelWriter<byte[]> writer =this.messagePool.Writer;
             while (!this.shutdownTrigger.IsCancellationRequested)
             {
+                
                 try
                 {
                     UdpReceiveResult message = await receiveServer.ReceiveAsync();
-
+                    
 
 
                     writer.WriteAsync(message.Buffer).AsTask().Wait();

@@ -729,12 +729,12 @@ public class OSCBundle : OSCPackage
     private const int identSize = 8;
     private const int timeTagSize = 8;
     
-    internal List<OSCMessage> RawUnpackBundle(OSCBundle bundle)
+    internal List<OSCMessage> RawUnpackBundle()
     {
         
         List<OSCMessage> unpackedValues = new List<OSCMessage>();
         Queue<OSCBundle> toUnpack = new Queue<OSCBundle>();
-        toUnpack.Enqueue(bundle);
+        toUnpack.Enqueue(this);
         while(toUnpack.Count > 0)
         {
             OSCBundle currentBundle= toUnpack.Dequeue();
@@ -755,12 +755,12 @@ public class OSCBundle : OSCPackage
         }
         return unpackedValues;
     }
-    public List<OSCMessage> UnpackBundle(OSCBundle bundle)
+    public List<OSCMessage> UnpackBundle()
     {
         
         List<OSCMessage> unpackedMessages = new List<OSCMessage>();
         Queue<OSCBundle> toUnpack = new Queue<OSCBundle>();
-        toUnpack.Enqueue(bundle);
+        toUnpack.Enqueue(this);
         while (toUnpack.Count > 0)
         {
             OSCBundle currentBundle = toUnpack.Dequeue();

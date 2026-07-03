@@ -16,11 +16,15 @@ namespace CactusOSC
         private UTF8Encoding utf8;
         private const int timeStampSize = 8;
         private const int sizeTagSize = 4;
+        private const int OSCWordSize=4;
+        private const int OSCLongSize=8;
         private byte[] messageTag;
         
         public OSCPackageInterpreter()
         {
-            this.bundleTag=Encoding.UTF8.GetBytes("#bundle");
+            
+            byte[] bundleTag= Encoding.UTF8.GetBytes("#bundle\0");
+            
             this.messageTag =Encoding.UTF8.GetBytes("/");
 
             //generate a fast lookup table for typestring valudation
@@ -49,9 +53,10 @@ namespace CactusOSC
         }
 
        
-        private bool isTypeStringCharValid(char character)
+        private bool isTypeStringCharValid(byte character)
         {
-            return this.possibleOSCTypes[(byte)character];
+            
+            return this.possibleOSCTypes[character];
         }
 
         private bool isBundle(ReadOnlySpan<byte> bytes)
@@ -106,86 +111,28 @@ namespace CactusOSC
         }
         private validateOSCStringDataAndGetLengthsReturn validateOSCStringDataAndGetLengths(ReadOnlySpan<byte> stringData)
         {
-            //init our vars
-            int end = 0;
-            int mode = 0;
-            int padding = 0;
-            int expectedPadding = 0; 
-            bool shouldBreak = false;
-            bool hitEnd=false;
-            int paddingNeed = 0;
-            //determine the length and padding of the string and if that all is valid
-            for (int index=0; index<stringData.Length;index++ )
-            {
-                switch (mode)
-                {
-                    //waiting for the end
-                    case 0:
-                        //if we hit the end
-                        if (stringData[index] == 0)
-                        {
-                            //save where the end is
-                            end = index;
-                            //switch to padding validation mode
-                            mode = 1;
-                            //save that we hit the end
-                            hitEnd = true;
-                            //determine our expected padding
-                            paddingNeed= ((end + 1) % 4);
-                            if (paddingNeed != 0)
-                            {
-                                //fence post bug fixed by the +1
-                                expectedPadding= 4 - paddingNeed;
-                            }
-                            
-                        }
-                        break;
-                    case 1:
-                        //if we havent finished verifying our padding
-                        if (padding < expectedPadding)
-                        {
-                            //if we see a padding byte count it, if not, break
-                            if (stringData[index] == 0)
-                            {
-                                padding++;
-                            }
-                            else
-                            {
-                                shouldBreak = true;
-                            }
-
-                        }
-                        else//if we have then break
-                        {
-                            shouldBreak = true;
-                        }
-                        break;
-                        
-
-                    
-                }
-                //if we have previosuly determined we should break, then break;
-                if (shouldBreak)
-                {
-                    break;
-                }
-                
-            }
-            if (!hitEnd)
-            {
-                throw new OSCStringNotNullTerminatedException();
-            }
-            if (padding != expectedPadding)
+            //find the null terminator
+            int end = stringData.IndexOf((byte)0);
+            //if there is none, scream
+            if (end < 0)
             {
                 throw new InvalidOSCStringException();
             }
-            //fence post bug fixed by the +1
+            //calcualte the total length of the string
+            int total = end + 1;
+            //find out the expected ammount of padding with division magic
+            int padding = (OSCWordSize - (total % OSCWordSize)) % OSCWordSize;
+
+            //check if the bytestream padding matches what is expected
+            for (int i = 1; i <= padding; i++)
+            {
+                if (stringData[end + i] != 0)
+                    throw new InvalidOSCStringException();
+            }
+            //if everything checks out return the bytes consumed
+            return new validateOSCStringDataAndGetLengthsReturn(total, padding);
 
 
-            
-            return new validateOSCStringDataAndGetLengthsReturn(end,padding);
-            
-            
         }
 
         private struct OSCStringConversionReturn
@@ -204,7 +151,8 @@ namespace CactusOSC
             validateOSCStringDataAndGetLengthsReturn lengths = this.validateOSCStringDataAndGetLengths(stringData);
             try
             {
-                return new OSCStringConversionReturn(this.utf8.GetString(stringData.Slice(0, lengths.end)), lengths.end + lengths.padding);
+                //minus one to account for the null terminator that gets included
+                return new OSCStringConversionReturn(this.utf8.GetString(stringData.Slice(0, lengths.end-1)), lengths.end + lengths.padding);
             }
             catch (DecoderFallbackException){
                 throw new InvalidOSCStringException();
@@ -230,6 +178,7 @@ namespace CactusOSC
         //value is, and said length, with the value being of type typechar
         private OSCvalueConversionReturn getOSCValueFromBytes(char typeChar, ReadOnlySpan<byte> data, int startIndex)
         {
+            
             OSCStringConversionReturn temp;
             switch (typeChar) {
                 case 's':
@@ -237,7 +186,7 @@ namespace CactusOSC
                     return new OSCvalueConversionReturn(temp.bytesRead, new OSCString(temp.value));
 
                 case 'i':
-                    if ((startIndex + 4) > data.Length)
+                    if ((startIndex + OSCWordSize) > data.Length)
                     {
                         throw new IncompleteOSCDataException();
                     }
@@ -245,7 +194,7 @@ namespace CactusOSC
                     return new OSCvalueConversionReturn(4, new OSCInt(BinaryPrimitives.ReadInt32BigEndian(data.Slice(startIndex, 4))));
 
                 case 'f':
-                    if ((startIndex + 4) > data.Length)
+                    if ((startIndex + OSCWordSize) > data.Length)
                     {
                         throw new IncompleteOSCDataException();
                     }
@@ -253,7 +202,7 @@ namespace CactusOSC
                     return new OSCvalueConversionReturn(4, new OSCFloat(BinaryPrimitives.ReadSingleBigEndian(data.Slice(startIndex, 4))));
 
                 case 'b':
-                    if ((startIndex + 4) > data.Length)
+                    if ((startIndex + OSCWordSize) > data.Length)
                     {
                         throw new IncompleteOSCDataException();
                     }
@@ -266,11 +215,11 @@ namespace CactusOSC
                     {
                         throw new IncompleteOSCDataException();
                     }
-                    
-                    return new OSCvalueConversionReturn(length + 4,new OSCBlob(data.Slice(startIndex + 4, length).ToArray()));
+                    int padding = (OSCWordSize - (length % OSCWordSize)) % OSCWordSize;
+                    return new OSCvalueConversionReturn(length + 4,new OSCBlob(data.Slice(startIndex + 4, length+padding).ToArray()));
 
                 case 'h':
-                    if ((startIndex + 8) > data.Length)
+                    if ((startIndex + OSCLongSize) > data.Length)
                     {
                         throw new IncompleteOSCDataException();
                     }
@@ -278,14 +227,14 @@ namespace CactusOSC
                     return new OSCvalueConversionReturn(8, new OSCLong(BinaryPrimitives.ReadInt64BigEndian(data.Slice(startIndex, 8))));
 
                 case 't':
-                    if ((startIndex + 8) > data.Length)
+                    if ((startIndex + OSCLongSize) > data.Length)
                     {
                         throw new IncompleteOSCDataException();
                     }
                     return new OSCvalueConversionReturn(8, new OSCTimeTag(BinaryPrimitives.ReadInt64BigEndian(data.Slice(startIndex, 8))));
 
                 case 'd':
-                    if ((startIndex + 8) > data.Length)
+                    if ((startIndex + OSCLongSize) > data.Length)
                     {
                         throw new IncompleteOSCDataException();
                     }
@@ -297,7 +246,7 @@ namespace CactusOSC
                     return new OSCvalueConversionReturn(temp.bytesRead, new OSCNonstandardString(temp.value));
 
                 case 'c':
-                    if ((startIndex + 4) > data.Length)
+                    if ((startIndex + OSCWordSize) > data.Length)
                     {
                         throw new IncompleteOSCDataException();
                     }
@@ -310,43 +259,30 @@ namespace CactusOSC
                     {
                         throw new InvalidPackageException();
                     }
+                    
 
                 case 'r':
-                    if ((startIndex + 4) > data.Length)
+                    if ((startIndex + OSCWordSize) > data.Length)
                     {
                         throw new IncompleteOSCDataException();
                     }
                     
-                    //because of how i encoded colors and midi, they are natively big endian even on little endian systems, and as such must be treated differently depending on system
-                    if (BitConverter.IsLittleEndian)
-                    {
+                    
+                    
+                    return new OSCvalueConversionReturn(4, new OSCColor(BinaryPrimitives.ReadInt32BigEndian((data.Slice(startIndex, 4)))));
                         
-                        return new OSCvalueConversionReturn(4, new OSCColor(BinaryPrimitives.ReadInt32LittleEndian(data.Slice(startIndex, 4))));
-                    }
-                    else
-                    {
-                        return new OSCvalueConversionReturn(4, new OSCColor(BinaryPrimitives.ReadInt32BigEndian((data.Slice(startIndex, 4)))));
-                        
-                    }
+                    
                     
 
                 case 'm':
-                    if ((startIndex + 4) > data.Length)
+                    if ((startIndex + OSCWordSize) > data.Length)
                     {
                         throw new IncompleteOSCDataException();
                     }
                     
-                    //because of how i encoded colors and midi, they are natively big endian even on little endian systems, and as such must be treated differently depending on system
-                    if (BitConverter.IsLittleEndian)
-                    {
-                        return new OSCvalueConversionReturn(4, new OSCMIDI(BinaryPrimitives.ReadInt32LittleEndian((data.Slice(startIndex, 4)))));
+                    return new OSCvalueConversionReturn(4,new OSCMIDI(BinaryPrimitives.ReadInt32BigEndian(data.Slice(startIndex, 4))));
                         
-                    }
-                    else
-                    {
-                        return new OSCvalueConversionReturn(4,new OSCMIDI(BinaryPrimitives.ReadInt32BigEndian(data.Slice(startIndex, 4))));
-                        
-                    }
+                    
                     
 
                 case 'T':
@@ -530,11 +466,13 @@ namespace CactusOSC
                     currentNode.childrenIndexes = new int[currentNode.childLists];
                     nodes[currentIndex] = currentNode;
                     //get the index of the parent node off the stack
-                    currentIndex = lastNodeIndex[lastNodeIndexPointer];
                     lastNodeIndexPointer--;
+                    currentIndex = lastNodeIndex[lastNodeIndexPointer];
+
                     //and get its parent node index off the stack too
-                    currentParentIndex=indexInParent[indexInParentPointer];
                     indexInParentPointer--;
+                    currentParentIndex =indexInParent[indexInParentPointer];
+                    
 
                 }
                 //otherwise we have found a value and need to add one to the number of values the current node has
@@ -565,115 +503,7 @@ namespace CactusOSC
         
         private OSCValue[] buildOSCMessageValuesList(ReadOnlySpan<byte> typestring,ReadOnlySpan<byte> argumentData)
         {
-            
-            
-            findListStructureReturn structureData= this.findListStructure(typestring);
-            int stackHeightMax = structureData.maxDepth;
-            listTreeBuilderNode[] listStructure = structureData.nodes;
-
-            OSCValue[][] unfinishedArrays = new OSCValue[stackHeightMax][];
-            int unfinishedArraysPointer = 0;
-            int[] unfinishedArraysIndex= new int[stackHeightMax];
-            int unfinishedArraysIndexPointer = 0;
-            listTreeBuilderNode[] framingStack = new listTreeBuilderNode[stackHeightMax];
-            int framingStackPointer = 0;
-            int[] framingStackIndexes = new int[stackHeightMax];
-            int framingStackIndexesPointer = 0;
-            listTreeBuilderNode currentNode = listStructure[0];
-            OSCValue[] baseList= new OSCValue[currentNode.childLists+currentNode.values];
-            OSCValue[] currentList=Array.Empty<OSCValue>();
-            int baseListIndex = 0;
-            int currentArrayIndex = 0;
-            int depth = 0;
-            int byteIndex = 0;
-            int currentFramingStackIndex = 0;
-            OSCvalueConversionReturn dataReturn;
-          
-            //start at one to avoid the comma
-            for (int character = 1; character < typestring.Length; character++)
-            {
-                if (depth > 0)
-                {
-                    if (this.isTypeStringCharValid((char)typestring[character]))
-                    {
-
-                        dataReturn = this.getOSCValueFromBytes((char)typestring[character], argumentData,byteIndex);
-                        byteIndex += dataReturn.bytesConsumed;
-                        currentList[currentArrayIndex] = dataReturn.returnValue;
-                        currentArrayIndex++;
-                    }
-                    else if (typestring[character] == '[')
-                    {
-                        depth++;
-                        framingStack[framingStackPointer]=currentNode;
-                        framingStackPointer++;
-                        currentNode = listStructure[currentNode.childrenIndexes[currentFramingStackIndex]];
-                        currentFramingStackIndex++;
-                        framingStackIndexes[framingStackIndexesPointer]=currentFramingStackIndex;
-                        framingStackIndexesPointer++;
-                        currentFramingStackIndex = 0;
-                        unfinishedArrays[unfinishedArraysPointer]=currentList;
-                        unfinishedArraysPointer++;
-                        currentList = new OSCValue[currentNode.childLists + currentNode.values];
-                        unfinishedArraysIndex[unfinishedArraysIndexPointer] = currentArrayIndex;
-                        unfinishedArraysIndexPointer++;
-                        currentArrayIndex = 0;
-                    }
-                    else if (typestring[character] == ']')
-                    {
-                        depth--;
-                        currentNode = framingStack[framingStackPointer];
-                        framingStackPointer--;
-                        currentFramingStackIndex = framingStackIndexes[framingStackIndexesPointer];
-                        framingStackIndexesPointer--;
-                        OSCArray tempVlaue = new OSCArray(currentList);
-                        currentList = unfinishedArrays[unfinishedArraysPointer];
-                        unfinishedArraysIndexPointer--;
-                        currentArrayIndex = unfinishedArraysIndex[unfinishedArraysIndexPointer];
-                        unfinishedArraysIndexPointer--;
-                        if (depth > 0)
-                        {
-                            currentList[currentArrayIndex] = tempVlaue;
-                            currentArrayIndex++;
-                        }
-                        else
-                        {
-                            baseList[baseListIndex] = tempVlaue;
-                            baseListIndex++;
-                        }
-
-                    }
-                    else
-                    {
-                        if (this.isTypeStringCharValid((char)typestring[character]))
-                        {
-                            dataReturn = this.getOSCValueFromBytes((char)typestring[character], argumentData,byteIndex);
-                            byteIndex += dataReturn.bytesConsumed;
-                            baseList[baseListIndex] = dataReturn.returnValue;
-                            baseListIndex++;
-                        }
-                        else if (typestring[character] == '[')
-                        {
-                            depth++;
-                            framingStack[framingStackPointer]=currentNode;
-                            framingStackPointer++;
-                            currentNode = listStructure[currentNode.childrenIndexes[currentFramingStackIndex]];
-                            currentFramingStackIndex++;
-                            framingStackIndexes[framingStackIndexesPointer]=currentFramingStackIndex;
-                            framingStackIndexesPointer++;
-                            currentFramingStackIndex = 0;
-                            currentList = new OSCValue[currentNode.childLists + currentNode.values];
-
-                        }
-                        else
-                        {
-                            throw new InvalidTypestringException();
-                        }
-
-                    }
-                }
-            }
-            return baseList;
+            //TODO:
 
         }
 
@@ -709,219 +539,17 @@ namespace CactusOSC
 
         private int findBundleCountAndCoarseValidate(ReadOnlySpan<byte> rawBundle)
         {
-            int readHead = 0;
-            int mode = 1;//used to be zero but i removed a case so now its 1
-            int elementSize = 0;
-            int bundleCount = 0;
-            bool shouldBreak=false;
-            validateOSCStringDataAndGetLengthsReturn stringReturn;
-            while (readHead < rawBundle.Length) {
-                switch (mode)
-                {
-                   
-                    case 1:
-                        //look for a bundle start and if found skip to the contents
-                        if (readHead > rawBundle.Length)
-                        {
-                            throw new InvalidBundleException();
-                        }
-                        stringReturn = this.validateOSCStringDataAndGetLengths(rawBundle.Slice(readHead));
-                        if (stringReturn.end <= 0)
-                        {
-                            throw new InvalidBundleException();
-                        }
-                        if (isBundle(rawBundle.Slice(readHead)))
-                        {
-                            readHead += stringReturn.end+stringReturn.padding + 8;
-                            bundleCount++;
-                            mode = 2;
-                        }
-                        break;
-                    case 2:
-                        if (readHead + 4 > rawBundle.Length)
-                        {
-                            shouldBreak = true;
-                            break;
-                        }
-                        elementSize = BinaryPrimitives.ReadInt32BigEndian(rawBundle.Slice(readHead, 4));
-                        if (elementSize < 0)
-                        {
-                            throw new InvalidBundleException();
-                        }
-                            
-                        readHead += 4;
-                        
-                        stringReturn = this.validateOSCStringDataAndGetLengths(rawBundle.Slice(readHead));
-                        if (stringReturn.end <= 0)
-                        {
-                            throw new InvalidBundleException();
-                        }
-                        if (isBundle(rawBundle.Slice(readHead)))
-                        {
-                            bundleCount++;
-                            readHead += 8;
-                        }
-                        else if (isMessage(rawBundle.Slice(readHead)))
-                        {
-                            if(readHead+elementSize > rawBundle.Length)
-                            {
-                                throw new InvalidBundleException();
-                            }
-                            readHead += elementSize;
-                        }
-                        else
-                        {
-                            throw new InvalidBundleException();
-                        }
-                        break;
-                }
-                if (shouldBreak)
-                {
-                    break;
-                }      
-
-            }
-            return bundleCount; 
+            //TODO:
 
         }
 
         
 
-        struct BundleTreeBuilderNode
-        {
-            public int childBundles;
-            public int messages;
-            public int parentIndex;
-            public int index;
-
-            public int[] childrenIndexes;
-            public int childrenIndexesIndex;
-            public long timeStamp;
-
-            public BundleTreeBuilderNode(int parentIndex,  int childBundles, int messages, int index, long timeStamp)
-            {
-
-                this.parentIndex = parentIndex;
-                this.messages = messages;
-                this.childBundles = childBundles;
-                
-                this.index = index;
-                this.childrenIndexes = Array.Empty<int>();
-                this.childrenIndexesIndex = 0;
-                this.timeStamp = timeStamp;
-                
-            }
-        }
+        
 
         private BundleTreeBuilderNode[] findBundleStructure(ReadOnlySpan<byte> rawBundle)
         {
-            int readHead = 0;
-            int mode = 1;
-            int bundleCount = this.findBundleCountAndCoarseValidate(rawBundle);
-            long timeStamp = 0;
-
-            BundleTreeBuilderNode[] nodes = new BundleTreeBuilderNode[bundleCount];
-            
-
-            int currentBundle = 0;
-            int newestBundle = 1;
-            int currentItemSize = 0;
-
-            int[] bundleStack= new int[bundleCount];
-            int[] bundleEnd= new int[bundleCount];
-            
-            int bundleStackIndex = 0;
-            bool starting = true;
-            validateOSCStringDataAndGetLengthsReturn stringReturn;
-
-            while ((readHead < rawBundle.Length))
-            {
-                if ((!starting) && ((bundleEnd[bundleStackIndex]==readHead)))
-                {
-                    nodes[currentBundle].childrenIndexes = new int[nodes[currentBundle].childBundles];
-                    currentBundle = bundleStack[bundleStackIndex];
-                    bundleStackIndex--;
-                }
-                else
-                {
-                    switch (mode)
-                    {
-                        
-                        case 1:
-                            stringReturn = this.validateOSCStringDataAndGetLengths(rawBundle.Slice(readHead));
-                            if (isBundle(rawBundle.Slice(readHead)))
-                            {
-                                readHead += stringReturn.end+stringReturn.padding;
-                                timeStamp = BinaryPrimitives.ReadInt64BigEndian(rawBundle.Slice(readHead, 8));
-                                readHead += 8;
-
-
-                                //create the base node
-                                nodes[0] = new BundleTreeBuilderNode(-1, 0, 0, 0, timeStamp);
-
-                                mode = 2;
-                            }
-                            else
-                            {
-                                throw new InvalidBundleException();
-                            }
-                            break;
-                        case 2:
-                            if (readHead + 4 > rawBundle.Length)
-                            {
-                                throw new InvalidBundleException();
-                            }
-                            currentItemSize = BinaryPrimitives.ReadInt32BigEndian(rawBundle.Slice(readHead, 4));
-                            readHead += 4;
-                            if (readHead + currentItemSize > rawBundle.Length)
-                            {
-                                throw new InvalidBundleException();
-                            }
-                            stringReturn = this.validateOSCStringDataAndGetLengths(rawBundle.Slice(readHead));
-                            if (isMessage(rawBundle.Slice(readHead)))
-                            {
-                                nodes[currentBundle].messages += 1;
-                                readHead += currentItemSize;
-                            }else
-                            {
-                                if (starting)
-                                {
-                                    starting = false;
-                                }
-                                timeStamp = BinaryPrimitives.ReadInt64BigEndian(rawBundle.Slice(readHead, 8));
-
-                                nodes[currentBundle].childBundles +=  1;
-                                bundleStack[bundleStackIndex] = currentBundle;
-                                bundleEnd[bundleStackIndex] = readHead + currentItemSize;
-                                bundleStackIndex++;
-                                nodes[newestBundle] = new BundleTreeBuilderNode(currentBundle, 0, 0, newestBundle, timeStamp);
-                                readHead += currentItemSize + 8;
-
-                                currentBundle = newestBundle;
-                                newestBundle++;
-                            }
-                            
-
-                            break;
-
-                    }
-                }
-            }
-            for (int i = 0; i < nodes.Length; i++)
-            {
-                if (nodes[i].parentIndex != -1)
-                {
-                    BundleTreeBuilderNode nodeCache0 = nodes[i];
-                    BundleTreeBuilderNode nodeCache1 = nodes[nodeCache0.parentIndex];
-
-                    nodeCache1.childrenIndexes[nodeCache1.childrenIndexesIndex] = i;
-                    nodeCache1.childrenIndexesIndex+= 1;
-                    nodes[nodeCache0.parentIndex]=nodeCache1;
-
-                }
-                
-            }
-            return nodes;
+            //TODO:
 
         }
 
@@ -932,109 +560,7 @@ namespace CactusOSC
 
         private OSCBundle ConvertOSCByteArrayToBundle(ReadOnlySpan<byte> rawBundle)
         {
-            BundleTreeBuilderNode[] treeStructure=this.findBundleStructure(rawBundle);
-            
-
-
-            BundleTreeBuilderNode currentNode = treeStructure[0]; 
-            int currentNodeChildIndex = 0;
-            int[] currentNodeChildIndexStack=new int[treeStructure.Length];
-            int currentNodeChildIndexStackPointer = 0;
-            
-            OSCBundleElement[] currentNodeData=new OSCBundleElement[currentNode.messages+currentNode.childBundles];
-            int currentNodeDataIndex = 0;
-            int[] currentNodeDataIndexStack=new int[treeStructure.Length];
-            int currentNodeDataIndexStackPointer = 0;
-            int currentNodeDataStackPointer = 0;
-            OSCBundleElement[][] currentNodeDataStack = new OSCBundleElement[treeStructure.Length][];
-            
-            int readHead = 0;
-            int currentSize = 0;
-            int mode = 1;
-            OSCBundle tempBundle=null;
-            
-            validateOSCStringDataAndGetLengthsReturn stringReturn;
-
-            
-
-            
-            while (readHead < rawBundle.Length)
-            {
-                if (currentNodeDataIndex == currentNodeData.Length)
-                {
-                    tempBundle = new OSCBundle(currentNodeData, currentNode.timeStamp);
-                    if (currentNode.parentIndex == -1)
-                    {
-                        break;
-                    }
-                    currentNode = treeStructure[currentNode.parentIndex];
-
-                    currentNodeDataStackPointer--;
-                     currentNodeData=currentNodeDataStack[currentNodeDataStackPointer];
-
-
-                    currentNodeDataIndexStackPointer--;
-                    currentNodeDataIndex=currentNodeDataIndexStack[currentNodeDataIndexStackPointer];
-                    
-                    currentNodeData[currentNodeDataIndex] = new OSCBundleElement(tempBundle);
-                    currentNodeDataIndex++;
-
-                    currentNodeChildIndexStackPointer--;
-                    currentNodeChildIndex =currentNodeChildIndexStack[currentNodeChildIndexStackPointer];
-                    
-                    
-                    
-
-                }
-                else
-                {
-                    switch (mode)
-                    {
-                       
-                        case 1:
-                            stringReturn = this.validateOSCStringDataAndGetLengths(rawBundle.Slice(readHead));
-                            readHead += 8 + stringReturn.padding+stringReturn.end;
-                            mode = 2;
-                            break;
-                        case 2:
-                            currentSize = BinaryPrimitives.ReadInt32BigEndian(rawBundle.Slice(readHead, 4));
-                            readHead += 4;
-                            stringReturn = this.validateOSCStringDataAndGetLengths(rawBundle.Slice(readHead));
-                            if (isMessage(rawBundle.Slice(readHead)))
-                            {
-                                currentNodeData[currentNodeDataIndex] = new OSCBundleElement(this.convertOSCByteArrayToMessage(rawBundle.Slice(readHead, currentSize)));
-                                currentNodeDataIndex++;
-                                readHead += currentSize;
-                            }
-                            else
-                            {
-                                readHead += stringReturn.end+stringReturn.end+8;
-                                
-                                currentNodeDataStack[currentNodeDataStackPointer] = currentNodeData;
-                                currentNodeDataStackPointer++;
-
-                                currentNodeDataIndexStack[currentNodeDataIndexStackPointer] = currentNodeDataIndex;
-                                currentNodeDataIndexStackPointer++;
-
-                                currentNode = treeStructure[currentNode.childrenIndexes[currentNodeChildIndex]];
-                                currentNodeChildIndex++;
-                                currentNodeChildIndexStack[currentNodeChildIndexStackPointer] = currentNodeChildIndex;
-                                currentNodeChildIndexStackPointer++;
-
-                                currentNodeData = new OSCBundleElement[currentNode.messages+currentNode.childBundles];
-
-                                
-                                
-                            }
-                            break;
-                    }
-                }
-
-                
-                  
-            }
-
-            return new OSCBundle(currentNodeData, currentNode.timeStamp);
+            //TODO:
 
             
         }
@@ -1046,32 +572,7 @@ namespace CactusOSC
 
         public OSCPackage convertOSCByteArrayToPackage(ReadOnlySpan<byte> rawPackage)
         {
-            int readHead = 0;
-            while (readHead < rawPackage.Length)
-            {
-                if (rawPackage[readHead] == '\0'){
-                    readHead++;
-                }
-                else {
-                    break;
-                }
-            }
-            validateOSCStringDataAndGetLengthsReturn stringReturn=this.validateOSCStringDataAndGetLengths(rawPackage.Slice(readHead));
-            if (stringReturn.end <= 0)
-            {
-                throw new InvalidPackageException();
-            }
-            if (isMessage(rawPackage.Slice(readHead, stringReturn.end)))
-            {
-                return this.convertOSCByteArrayToMessage(rawPackage.Slice(readHead));
-            }else if (isBundle(rawPackage.Slice(readHead,stringReturn.end)))
-            {
-                return this.ConvertOSCByteArrayToBundle(rawPackage.Slice(readHead));
-            }
-            else
-            {
-                throw new InvalidPackageException();
-            }
+            //TODO:
         }
 
 

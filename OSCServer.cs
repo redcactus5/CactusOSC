@@ -28,27 +28,73 @@ namespace CactusOSC
 
         }
 
-        //still need to add send and receive
+        
         //receive a decoded osc package if one is avalable
         public bool tryReceiveOSCPackage(out OSCPackage targetPackage)
         {
-            return this.decodeEncodeServer.tryGetDecodedPackage(out targetPackage);
+            if (started)
+            {
+                return this.decodeEncodeServer.tryGetDecodedPackage(out targetPackage);
+            }
+            else
+            {
+                throw new serverNotStartedException();
+            }
+            
         }
 
         //receive either an empty list or a list of decoded packages if packages are avalable to receive
         public List<OSCPackage> receiveOSCPackageList()
         {
-            return this.decodeEncodeServer.getDecodedPackageList();
+            if (started)
+            {
+                return this.decodeEncodeServer.getDecodedPackageList();
+            }
+            else
+            {
+                throw new serverNotStartedException();
+            }
+            
         }
 
         public void sendOSCPackage(OSCPackage packageToSend)
         {
-            this.decodeEncodeServer.enqueuePackageEncoding(packageToSend);
+            if (started)
+            {
+                this.decodeEncodeServer.enqueuePackageEncoding(packageToSend).Wait();
+            }
+            else
+            {
+                throw new serverNotStartedException();
+            }
+            
         }
 
         public void sendOSCPackageList(List<OSCPackage> packageListToSend)
         {
-            this.decodeEncodeServer.enqueuePackageListEncoding(packageListToSend);
+            if (started)
+            {
+                this.decodeEncodeServer.enqueuePackageListEncoding(packageListToSend).Wait();
+            }
+            else
+            {
+                throw new serverNotStartedException();
+            }
+            
+        }
+
+
+        public void waitForSendCompletion()
+        {
+            if (started)
+            {
+                this.decodeEncodeServer.waitForEncodequeueFinish().Wait();
+                this.OSCSendServer.waitForSendFinish();
+            }
+            else
+            {
+                throw new serverNotStartedException();
+            }
         }
 
         public void startOSCServer()
@@ -79,6 +125,7 @@ namespace CactusOSC
 
                 this.OSCSendServer.start();
                 this.OSCReceiveServer.start();
+                this.decodeEncodeServer.start().Wait();
                 this.started = true;
             }
             else
