@@ -42,8 +42,12 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 1,
+          "SelectedChildIndex": 2,
           "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{aa2115a1-9712-457b-9047-dbb71ca2cdd2}"
+            },
             {
               "$type": "Document",
               "DocumentIndex": 6,
@@ -64,7 +68,7 @@
               "RelativeDocumentMoniker": "OSCPackageInterpreter.cs",
               "ToolTip": "C:\\Users\\roboc\\Desktop\\misc\\programming\\c#\\CactusOSC\\OSCPackageInterpreter.cs",
               "RelativeToolTip": "OSCPackageInterpreter.cs",
-              "ViewState": "AgIAAOcBAAAAAAAAAAAuwPoBAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAACwDAAAAAAAAAAAkwEkDAAASAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2026-06-30T02:35:12.148Z",
               "EditorCaption": ""
@@ -91,8 +95,7 @@
               "RelativeToolTip": "OSCTypes.cs",
               "ViewState": "AgIAAKUBAAAAAAAAAAAQwLYBAAAFAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-06-29T21:26:16.644Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-06-29T21:26:16.644Z"
             },
             {
               "$type": "Document",
@@ -128,8 +131,7 @@
               "RelativeToolTip": "decodeEncodeServer.cs",
               "ViewState": "AgIAAMwAAAAAAAAAAAAAAN4AAAAtAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-06-28T19:23:33.24Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-06-28T19:23:33.24Z"
             },
             {
               "$type": "Document",

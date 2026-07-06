@@ -11,8 +11,10 @@ namespace CactusOSC
     
     internal class OSCPackageInterpreter
     {
-        private bool[] possibleOSCTypes; 
+        private bool[] possibleOSCTypes;
+        private bool[] invalidMethodChars;
         private byte[] bundleTag;
+        private const int bundleTagLength = 8;
         private UTF8Encoding utf8;
         private const int timeStampSize = 8;
         private const int sizeTagSize = 4;
@@ -27,10 +29,12 @@ namespace CactusOSC
             
             this.messageTag =Encoding.UTF8.GetBytes("/");
 
-            //generate a fast lookup table for typestring valudation
+            //generate a fast lookup table for typestring valudation and method validation
             this.possibleOSCTypes = new bool[256];
+            this.invalidMethodChars= new bool[256];
             for (int i = 0; i < possibleOSCTypes.Length; i++) {
                 possibleOSCTypes[i] = false;
+                invalidMethodChars[i] = true;
             }
             this.possibleOSCTypes[(byte)'s'] = true;
             this.possibleOSCTypes[(byte)'i'] = true;
@@ -47,9 +51,17 @@ namespace CactusOSC
             this.possibleOSCTypes[(byte)'F'] = true;
             this.possibleOSCTypes[(byte)'N'] = true;
             this.possibleOSCTypes[(byte)'I'] = true;
+            //make a canary enabled utf8 encoder
             this.utf8 = new UTF8Encoding(false, true);
 
-            
+            this.invalidMethodChars[(byte)' '] = false;
+            this.invalidMethodChars[(byte)'*'] = false;
+            this.invalidMethodChars[(byte)','] = false;
+            this.invalidMethodChars[(byte)'?'] = false;
+            this.invalidMethodChars[(byte)'['] = false;
+            this.invalidMethodChars[(byte)']'] = false;
+            this.invalidMethodChars[(byte)'{'] = false;
+            this.invalidMethodChars[(byte)'}'] = false;
         }
 
        
@@ -127,7 +139,10 @@ namespace CactusOSC
             for (int i = 1; i <= padding; i++)
             {
                 if (stringData[end + i] != 0)
+                {
                     throw new InvalidOSCStringException();
+                }
+                    
             }
             //if everything checks out return the bytes consumed
             return new validateOSCStringDataAndGetLengthsReturn(total, padding);
@@ -501,9 +516,159 @@ namespace CactusOSC
             return new findListStructureReturn(nodes,maxDepth);
         }
         
+
+        //need a struct here to represent the stack frames for the below function
+        private struct buildOSCMessageValuesFrame
+        {
+            public int listStructureIndex;
+            public listTreeBuilderNode currentNode;
+            public OSCValue[] currentList;
+            public int currentListIndex;
+            public int childListIndex;
+
+            public buildOSCMessageValuesFrame(int listStructureIndex, listTreeBuilderNode currentNode, OSCValue[] currentList,int currentListIndex,int childListIndex)
+            {
+                this.listStructureIndex = listStructureIndex;
+                this.currentNode = currentNode;
+                this.currentList = currentList;
+                this.currentListIndex = currentListIndex;
+                this.childListIndex = childListIndex;
+            }
+        }
+        private struct buildOSCMessageValuesStack
+        {
+            private int stackIndex;
+            private buildOSCMessageValuesFrame[] frames;
+
+            public buildOSCMessageValuesStack(int size)
+            {
+                this.frames=new buildOSCMessageValuesFrame[size];
+                this.stackIndex = 0;
+            }
+
+            public void push(buildOSCMessageValuesFrame newFrame)
+            {
+                if (this.stackIndex >= this.frames.Length)
+                {
+                    throw new IndexOutOfRangeException();
+                }
+                this.frames[this.stackIndex] = newFrame;
+                this.stackIndex++;
+            }
+
+            public buildOSCMessageValuesFrame pop()
+            {
+                this.stackIndex--;
+                if (this.stackIndex < 0)
+                {
+                    throw new IndexOutOfRangeException();
+                }
+                
+                return this.frames[this.stackIndex];
+            }
+        }
+        
+        //give the raw typestirng data, dont trim it first
         private OSCValue[] buildOSCMessageValuesList(ReadOnlySpan<byte> typestring,ReadOnlySpan<byte> argumentData)
         {
             //TODO:
+
+            //check for front comma in typestring
+            if (typestring[0] != ',')
+            {
+                throw new InvalidTypestringException();
+            }
+            //remove end null and front comma from typestring
+            ReadOnlySpan<byte> localTypeString=typestring.Slice(1,typestring.Length - 2);
+            //find the list structure and save the array to a local variable
+            findListStructureReturn listStructureReturn =this.findListStructure(localTypeString);
+            listTreeBuilderNode[] listStrucure = listStructureReturn.nodes;
+
+            //make an array of the same size of the list structure for the stack frames
+            buildOSCMessageValuesStack stack = new buildOSCMessageValuesStack(listStructureReturn.maxDepth);
+            
+            //variable for the index of the current list strucre element
+            int listStructureIndex = 0;
+            //the current list structure element
+            listTreeBuilderNode currentNode=listStrucure[listStructureIndex];
+            //variable for the current childlist of currentlist we are on
+            int childListIndex = 0;
+
+            //varaible for the current list, take size for the current element in the list structure
+            OSCValue[] currentList = new OSCValue[currentNode.childLists+currentNode.values];
+            //variable for the position in the current list
+            int currentListIndex = 0;
+
+            //variable for the current position in the data segment
+            int readHead = 0;
+
+            //just some temporary storeage while we transiton stack frames
+            OSCArray oscListTemp;
+            buildOSCMessageValuesFrame oscTempFrame;
+
+            //just some temporary value storage
+            OSCvalueConversionReturn tempValue;
+
+            //loop through the cut out typestring from 0 to length
+            for (int index = 0; index < localTypeString.Length; index++)
+            {
+
+                //if the typestring is "[":
+                if (localTypeString[index] == '[')
+                {
+                    //push the current variables to the stack
+                    //get the next sublist from the list structure
+                    //reset our position variables for the new sublist
+                    //create our new current list form its data
+                    stack.push(new buildOSCMessageValuesFrame(listStructureIndex, currentNode, currentList, currentListIndex, childListIndex));
+                    listStructureIndex = currentNode.childrenIndexes[childListIndex];
+                    currentNode = listStrucure[listStructureIndex];
+                    childListIndex = 0;
+                    currentListIndex = 0;
+                    currentList = new OSCValue[currentNode.childLists + currentNode.values];
+                }
+                //else if the typestring is "]":
+                else if (localTypeString[index] == ']')
+                {
+                    //take the current list and convert it to an osc list
+                    //pop the values for the last list off the stack
+                    //store the list we just made in the list we just got off the stack and increment our positon in it
+                    //increment the childListIndex as we just finished a childlist
+                    oscListTemp = new OSCArray(currentList);
+                    oscTempFrame = stack.pop();
+                    listStructureIndex = oscTempFrame.listStructureIndex;
+                    currentNode = oscTempFrame.currentNode;
+                    childListIndex = oscTempFrame.childListIndex;
+                    childListIndex++;
+                    currentList = oscTempFrame.currentList;
+                    currentListIndex = oscTempFrame.currentListIndex;
+                    currentList[currentListIndex] = oscListTemp;
+                    currentListIndex++;
+
+                }
+                //else if the typestring is a valid type:
+                else if (this.isTypeStringCharValid(localTypeString[index]))
+                {
+                    //create an item for the data at the readhead of that type and get how many bytes we consumed
+                    //put that item in the current list
+                    //increment the positon in the current list
+                    //update the readhead by how many bytes we consumed
+                    tempValue = this.getOSCValueFromBytes((char)localTypeString[index], argumentData, readHead);
+                    readHead += tempValue.bytesConsumed;
+                    currentList[currentListIndex] = tempValue.returnValue;
+                    currentListIndex++;
+                }
+                //else:
+                else
+                {
+                    //throw a typestyring error
+                    throw new InvalidTypestringException();
+                }
+                
+            }
+            //after the loop is done return the current array
+            return currentList;
+            
 
         }
 
@@ -522,9 +687,16 @@ namespace CactusOSC
             OSCStringConversionReturn stringReturn1 = this.extractOSCString(rawData);
             byteIndex += stringReturn1.bytesRead;
             
-            if (stringReturn1.value[0]=='/')
+            if (stringReturn1.value[0]!='/')
             {
                 throw new InvalidOSCAddressException();
+            }
+            for(int i = 0; i < stringReturn1.value.Length; i++)
+            {
+                if (this.invalidMethodChars[stringReturn1.value[i]] == false)
+                {
+                    throw new InvalidOSCAddressException();
+                }
             }
             stringReturn0 = this.validateOSCStringDataAndGetLengths(rawData.Slice(byteIndex));
             byteIndex+= stringReturn0.end+stringReturn0.padding;
@@ -539,17 +711,136 @@ namespace CactusOSC
 
         private int findBundleCountAndCoarseValidate(ReadOnlySpan<byte> rawBundle)
         {
-            //TODO:
+            
+            
+            //variable for the count
+            int bundleCount = 0;
+            //variable for the current item's size
+            int currentItemSize = 0;
+            //vairable for the progress through the bundle data
+            int readHead = 0;
+            //just a control flow variable for the algorithm
+            bool bundleCheckIsBundle = false;
+            //verify that the bundle data is indeed a bundle and move past its header, and incriment the bundle count
+            if (rawBundle.Length < bundleTagLength + timeStampSize)
+            {
+                throw new InvalidBundleException();
+            }
+            if (this.isBundle(rawBundle))
+            {
+                readHead += bundleTagLength + timeStampSize;
+                bundleCount++;
+            }
+            else
+            {
+                throw new InvalidBundleException();
+            }
 
+
+            //loop while the readhead is less than or equal to the surrounding raw bundle's size
+            while(readHead< rawBundle.Length)
+            {
+                bundleCheckIsBundle = false;
+                //test if reading the item size is too big for the current rawbundle size, and if so throw
+                if (readHead + sizeTagSize > rawBundle.Length)
+                {
+                    throw new InvalidBundleException();
+                }
+                //read in the item size and incrmeent the readhead by it
+                currentItemSize=BinaryPrimitives.ReadInt32BigEndian(rawBundle.Slice(readHead,sizeTagSize));
+                readHead += sizeTagSize;
+                //if the item size is negitive or greater than the remaining length of rawbundle throw
+                if ((currentItemSize < 0) || (rawBundle.Length  < currentItemSize + readHead))
+                {
+                    throw new InvalidBundleException();
+                }
+                //otherwise test if remaining size is big enough for a bundle header
+                if (rawBundle.Length >= bundleTagLength + timeStampSize+readHead)
+                {
+                    //if it is big enough, test the header for the bundle tag, and if it passes move past the header and increment bundle count
+                    if (isBundle(rawBundle.Slice(readHead)))
+                    {
+                        readHead += bundleTagLength + timeStampSize;
+                        bundleCount++;
+                        bundleCheckIsBundle=true;
+                    }
+                    
+                }
+                if (bundleCheckIsBundle == false)
+                {
+                    //otherwise test if the remaining size is big enough for a message, and if not, throw
+                    if (rawBundle.Length < messageTag.Length + readHead)
+                    {
+                        throw new InvalidBundleException();
+                    }
+                    //if it is big enough, test if it is a message, if not throw
+                    if (isMessage(rawBundle.Slice(readHead)))
+                    {
+                        //if it is a message increment the readhead by the item size
+                        readHead += currentItemSize;
+                    }
+                    else
+                    {
+                        throw new InvalidBundleException();
+                    }
+
+                }
+                
+                
+                
+            }
+
+
+            //return the bundle count
+
+
+            return bundleCount;
         }
 
         
+        struct BundleTreeBuilderNode
+        {
+            public int parentIndex;
+            public int childNodeCount;
+            public int messageCount;
+            public int childNodesIndex;
+            public BundleTreeBuilderNode[] childNodes;
 
+            public BundleTreeBuilderNode(int parentIndex)
+            {
+                this.parentIndex = 0;
+                this.childNodeCount = 0;
+                this.messageCount = 0;
+                this.childNodesIndex = 0;
+                
+            }
+        }
         
 
         private BundleTreeBuilderNode[] findBundleStructure(ReadOnlySpan<byte> rawBundle)
         {
             //TODO:
+            //a varaible to store the total number of bundles in the array, retreived with a function
+
+            //an array to store all the bundle nodes
+
+            //a varaible to point ot the next open slot in the above array
+
+            //a varaible to point ot the current active array index
+
+            //a varaible to store the current active node struct
+
+            //a variable to store the current position in the raw bundle
+
+            //a varaible to store the current item size
+
+            //get past the starting bundle header
+
+
+            
+            //loop while the read head is less than size of the raw bundle
+                //
+                
 
         }
 
