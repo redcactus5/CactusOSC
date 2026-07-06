@@ -1,7 +1,7 @@
 ﻿
 
 using System.Buffers.Binary;
-
+using System.Runtime.InteropServices;
 using System.Text;
 
 
@@ -67,10 +67,10 @@ namespace CactusOSC
        
         private bool isTypeStringCharValid(byte character)
         {
-            
             return this.possibleOSCTypes[character];
         }
 
+        //self explanitory, checks if a readonly span of bytes has a starting bundle tag
         private bool isBundle(ReadOnlySpan<byte> bytes)
         {
             if (bytes.Length >= this.bundleTag.Length) {
@@ -92,6 +92,7 @@ namespace CactusOSC
             
         }
 
+        //self explanitory checks if a read only span of bytes ahas a starting message tag
         private bool isMessage(ReadOnlySpan<byte> bytes)
         {
             if (bytes.Length >= this.messageTag.Length)
@@ -803,45 +804,148 @@ namespace CactusOSC
             public int parentIndex;
             public int childNodeCount;
             public int messageCount;
-            public int childNodesIndex;
-            public BundleTreeBuilderNode[] childNodes;
+            public int childNodesArrayCurrentIndex;
+            public int endPosition;
+            public int[] childNodesIndexes;
 
-            public BundleTreeBuilderNode(int parentIndex)
+            public BundleTreeBuilderNode(int parentIndex,int endPosition)
             {
-                this.parentIndex = 0;
+                this.parentIndex = parentIndex;
+                this.endPosition = endPosition;
                 this.childNodeCount = 0;
                 this.messageCount = 0;
-                this.childNodesIndex = 0;
+                this.childNodesArrayCurrentIndex = 0;
                 
             }
         }
-        
 
-        private BundleTreeBuilderNode[] findBundleStructure(ReadOnlySpan<byte> rawBundle)
+        private struct findBundleStructureReturn
+        {
+            public BundleTreeBuilderNode[] nodeArray;
+            public int maxDepth;
+
+            public findBundleStructureReturn(BundleTreeBuilderNode[] nodeArray, int maxDepth)
+            {
+                this.nodeArray = nodeArray;
+                this.maxDepth = maxDepth;
+            }
+        }
+        private findBundleStructureReturn findBundleStructure(ReadOnlySpan<byte> rawBundle)
         {
             //TODO:
             //a varaible to store the total number of bundles in the array, retreived with a function
-
+            int bundleCount=this.findBundleCountAndCoarseValidate(rawBundle);
             //an array to store all the bundle nodes
-
+            BundleTreeBuilderNode[] masterArray=new BundleTreeBuilderNode[bundleCount];
             //a varaible to point ot the next open slot in the above array
-
+            int nextOpen = 0;
             //a varaible to point ot the current active array index
-
+            int currentIndex = 0;
             //a varaible to store the current active node struct
-
+            BundleTreeBuilderNode currentNode;
             //a variable to store the current position in the raw bundle
-
+            int readHead = 0 ;
             //a varaible to store the current item size
+            int currentSize = 0 ;
+            //a varaible to store the current depth
+            int depth = 0;
+            //a varaible to store the max depth
+            int maxDepth = 0;
+            //get past the root bundle header and create the root node
+            readHead += bundleTagLength + timeStampSize;
+            currentNode = new BundleTreeBuilderNode(-1,rawBundle.Length);
+            masterArray[currentIndex]=currentNode;
+            nextOpen++;
 
-            //get past the starting bundle header
 
-
-            
             //loop while the read head is less than size of the raw bundle
-                //
-                
+            while (readHead < rawBundle.Length)
+            {
+                //if the readhead is greater than or equal to the end position of the current node:
+                if (readHead >= currentNode.endPosition)
+                {
+                    if (currentNode.parentIndex == -1) {
+                        throw new InvalidBundleException();
+                    }
+                    //create the final childnodesIndexes array with the know size of its childcount, set the current node to its postion in the array,
+                    currentNode.childNodesIndexes = new int[currentNode.childNodeCount];
+                    masterArray[currentIndex] = currentNode;
+                    //then load its parent node from the array and set currentindex node to that node index and set current node to the node at that index
+                    currentIndex = currentNode.parentIndex;
+                    currentNode=masterArray[currentIndex];
+                    //decrement depth
+                    depth--;
+                }
 
+
+                //get the size tag of the current payload and advance the read head past it
+                currentSize=BinaryPrimitives.ReadInt32BigEndian(rawBundle.Slice(readHead,sizeTagSize));
+                readHead +=sizeTagSize;
+                //check if the payload at the current positon is a bundle and if it is:
+                if (isBundle(rawBundle.Slice(readHead)))
+                {
+                    //update the read head
+                    readHead += bundleTagLength + timeStampSize;
+                    //increment the number of children of the current node
+                    currentNode.childNodeCount=currentNode.childNodeCount+1;
+                    //store the current bundle to its position in the array
+                    masterArray[currentIndex] = currentNode;
+                    //create a new bundle at the next open array slot, with its parent node set to the current node index and increment the pointer to that slot,
+                    //set the current index to the index of this new bundle, and set the current bundle to this new bundle
+                    currentNode = new BundleTreeBuilderNode(currentIndex,readHead+currentSize);
+                    currentIndex = nextOpen;
+                    masterArray[currentIndex] = currentNode;
+                    //update the next open slot
+                    nextOpen++;
+                    //increment depth
+                    depth++;
+                    //if current depth is greater than max depth, update it
+                    if(depth> maxDepth)
+                    {
+                        maxDepth = depth;
+                    }
+
+                }
+                //otherwise:
+                else
+                {
+                    // increment message count of the current node and move the read head past it by its size
+                    currentNode.messageCount=currentNode.messageCount+1;
+                    readHead += currentSize;
+
+                }
+
+
+                
+                
+            }
+
+            //populate the final node
+            currentNode.childNodesIndexes = new int[currentNode.childNodeCount];
+            masterArray[currentIndex] = currentNode;
+
+            BundleTreeBuilderNode nodeCache0;
+            BundleTreeBuilderNode nodeCache1;
+            //loop through all the nodes in the list
+            for (int index = 0; index < masterArray.Length; index++)
+            {
+                nodeCache0 = masterArray[index];
+                //if the node's parent index isnt -1 (the root)
+                if (nodeCache0.parentIndex != -1)
+                {
+                    //goto its parent node, and add its index in the master arry to its parent's children's indexes array at the first open position
+                    nodeCache1 = masterArray[nodeCache0.parentIndex];
+                    nodeCache1.childNodesIndexes[nodeCache1.childNodesArrayCurrentIndex] = index;
+                    nodeCache1.childNodesArrayCurrentIndex++;
+                    masterArray[nodeCache0.parentIndex] = nodeCache1;
+                }
+
+            }
+
+
+
+            //return the max depth and nodeArray as a struct
+            return new findBundleStructureReturn(masterArray, maxDepth);
         }
 
 
