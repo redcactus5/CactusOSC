@@ -17,66 +17,267 @@ namespace CactusOSC
 {
     public class serverAlreadyStartedException: Exception
     {
+        public serverAlreadyStartedException()
+        {
+        }
 
+        public serverAlreadyStartedException(string message)
+            : base(message)
+        {
+        }
+
+        public serverAlreadyStartedException(string message, Exception innerException)
+            : base(message, innerException)
+        {
+        }
     }
     public class serverNotStartedException: Exception
     {
+        public serverNotStartedException()
+        {
+        }
 
+        public serverNotStartedException(string message)
+            : base(message)
+        {
+        }
+
+        public serverNotStartedException(string message, Exception innerException)
+            : base(message, innerException)
+        {
+        }
     }
     class parserStuckException: InvalidBundleException
     {
+        public parserStuckException()
+        {
+        }
 
+        public parserStuckException(string message)
+            : base(message)
+        {
+        }
+
+        public parserStuckException(string message, Exception innerException)
+            : base(message, innerException)
+        {
+        }
     }
     class InvalidBundleException: InvalidPackageException
     {
+        public InvalidBundleException()
+        {
+        }
 
+        public InvalidBundleException(string message)
+            : base(message)
+        {
+        }
+
+        public InvalidBundleException(string message, Exception innerException)
+            : base(message, innerException)
+        {
+        }
     }
     
     class IncompleteBundleException: InvalidBundleException
     {
+        public IncompleteBundleException()
+        {
+        }
 
+        public IncompleteBundleException(string message)
+            : base(message)
+        {
+        }
+
+        public IncompleteBundleException(string message, Exception innerException)
+            : base(message, innerException)
+        {
+        }
     }
 
     class IndexAlreadyPopulatedException : Exception
     {
+        public IndexAlreadyPopulatedException()
+        {
+        }
 
+        public IndexAlreadyPopulatedException(string message)
+            : base(message)
+        {
+        }
+
+        public IndexAlreadyPopulatedException(string message, Exception innerException)
+            : base(message, innerException)
+        {
+        }
     }
-    class UnfinishedDataSegmentException:InvalidPackageException { }
+    
 
     class InvalidPackageException: Exception
     {
+        public InvalidPackageException()
+        {
+        }
 
+        public InvalidPackageException(string message)
+            : base(message)
+        {
+        }
+
+        public InvalidPackageException(string message, Exception innerException)
+            : base(message, innerException)
+        {
+        }
     }
 
     class IncompleteOSCDataException: InvalidPackageException
     {
+        public IncompleteOSCDataException()
+        {
+        }
 
+        public IncompleteOSCDataException(string message)
+            : base(message)
+        {
+        }
+
+        public IncompleteOSCDataException(string message, Exception innerException)
+            : base(message, innerException)
+        {
+        }
     }
     class InvalidOSCDataException : InvalidPackageException
     {
+        public InvalidOSCDataException()
+        {
+        }
 
+        public InvalidOSCDataException(string message)
+            : base(message)
+        {
+        }
+
+        public InvalidOSCDataException(string message, Exception innerException)
+            : base(message, innerException)
+        {
+        }
     }
     class InvalidOSCAddressException : InvalidPackageException
     {
+        public InvalidOSCAddressException()
+        {
+        }
+
+        public InvalidOSCAddressException(string message)
+            : base(message)
+        {
+        }
+
+        public InvalidOSCAddressException(string message, Exception innerException)
+            : base(message, innerException)
+        {
+        }
     }
     class OSCListNodeReturnTypeMismatchException: Exception
     {
+        public OSCListNodeReturnTypeMismatchException()
+        {
+        }
 
+        public OSCListNodeReturnTypeMismatchException(string message)
+            : base(message)
+        {
+        }
+
+        public OSCListNodeReturnTypeMismatchException(string message, Exception innerException)
+            : base(message, innerException)
+        {
+        }
     }
     class InvalidOSCStringException : InvalidPackageException
     {
+        public InvalidOSCStringException()
+        {
+        }
 
+        public InvalidOSCStringException(string message)
+            : base(message)
+        {
+        }
+
+        public InvalidOSCStringException(string message, Exception innerException)
+            : base(message, innerException)
+        {
+        }
     }
     class InvalidTypestringException: InvalidOSCStringException
     {
+        public InvalidTypestringException()
+        {
+        }
+
+        public InvalidTypestringException(string message)
+            : base(message)
+        {
+        }
+
+        public InvalidTypestringException(string message, Exception innerException)
+            : base(message, innerException)
+        {
+        }
 
     }
 
     class OSCStringNotNullTerminatedException : InvalidOSCStringException
     {
+        public OSCStringNotNullTerminatedException()
+        {
+            
+        }
+
+        public OSCStringNotNullTerminatedException(string message)
+            : base(message)
+        {
+        }
+
+        public OSCStringNotNullTerminatedException(string message, Exception innerException)
+            : base(message, innerException)
+        {
+        }
     }
     public class SizeAlreadySetException : Exception
     {
+        public SizeAlreadySetException()
+        {
+        }
 
+        public SizeAlreadySetException(string message)
+            : base(message)
+        {
+        }
+
+        public SizeAlreadySetException(string message, Exception innerException)
+            : base(message, innerException)
+        {
+        }
+    }
+
+    public class InvalidOSCValueType : Exception
+    {
+        public InvalidOSCValueType()
+        {
+        }
+
+        public InvalidOSCValueType(string message)
+            : base(message)
+        {
+        }
+
+        public InvalidOSCValueType(string message, Exception innerException)
+            : base(message, innerException)
+        {
+        }
     }
 }

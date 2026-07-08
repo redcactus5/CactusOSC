@@ -241,7 +241,7 @@ namespace CactusOSC
                         throw new IncompleteOSCDataException();
                     }
                     int padding = (OSCWordSize - (length % OSCWordSize)) % OSCWordSize;
-                    return new OSCvalueConversionReturn(length + 4,new OSCBlob(data.Slice(startIndex + 4, length+padding).ToArray()));
+                    return new OSCvalueConversionReturn(length + 4,new OSCBlob(data.Slice(startIndex + 4, length).ToArray()));
 
                 case 'h':
                     if ((startIndex + OSCLongSize) > data.Length)
