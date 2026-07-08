@@ -262,7 +262,7 @@ namespace CactusOSC
                     target.writeData(writeCache4);
                     break;
                 default:
-                    throw new Exception("invalid OSCValueType!");
+                    throw new InvalidOSCValueType();
                     
             }
             return target;
