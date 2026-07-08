@@ -68,7 +68,7 @@ namespace CactusOSC
                     }
                     this.finishedSend.Set();
 
-                    await messageQueue.Reader.WaitToReadAsync();
+                    await messageQueue.Reader.WaitToReadAsync(shutdownTrigger.Token);
                     this.finishedSend.Reset();
 
                 }

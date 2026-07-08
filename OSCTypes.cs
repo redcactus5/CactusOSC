@@ -558,7 +558,11 @@ namespace CactusOSC
             {
                 stringEdition.Append(this.data[index].ToString() + ", ");
             }
-            stringEdition.Append(this.data[data.Length - 1].ToString());
+            if (data.Length > 0)
+            {
+                stringEdition.Append(this.data[data.Length - 1].ToString());
+            }
+            
             stringEdition.Append("]");
             return stringEdition.ToString();
         }
@@ -813,8 +817,8 @@ public sealed class OSCBundle : OSCPackage
                             sb.Append("    ");
                         }
                         sb.Append("Bundle(");
-                        seconds = (uint)(timeTag >> 32);
-                        fraction = (uint)(timeTag & 0xffffffff);
+                        seconds = (uint)(currentSubBundle.timeTag >> 32);
+                        fraction = (uint)(currentSubBundle.timeTag & 0xffffffff);
                         sb.Append(seconds);
                         sb.Append(':');
                         sb.Append(fraction);
