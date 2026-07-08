@@ -1,6 +1,6 @@
 # CactusOSC
 
-a simple, powerful , easy to use c# Open Sound Control sending and receiving library, built entirely in c#, from the ground up, for .NET and c#.
+a simple, powerful, easy to use c# Open Sound Control sending and receiving library, built entirely in c#, from the ground up, for .NET and c#.
 
 
 
@@ -35,4 +35,14 @@ there is no real documentation or example code as of yet(sorry! its on my todo l
 i will say that Incoming messages are buffered internally in an ordered queue. Applications should poll frequently enough to prevent unbounded backlog growth. also Timetags are preserved but not scheduled.
 
 enjoy!
+
+
+
+copyright 2026 RedCactus5
+
+CactusOSC is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+
+CactusOSC is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public License along with CactusOSC. If not, see <https://www.gnu.org/licenses/>. 
 
