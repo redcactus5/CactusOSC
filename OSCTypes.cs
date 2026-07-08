@@ -31,7 +31,7 @@ namespace CactusOSC
         OSCMIDI,
         OSCBool,
         OSCNil,
-        OSCInfinum,
+        OSCInfinitum,
         OSCArray
     }
 
@@ -214,7 +214,7 @@ namespace CactusOSC
         
         public byte[] getValue()
         {
-            return this.value;
+            return (byte[])this.value.Clone();
         }
         public override string ToString()
         {
@@ -497,7 +497,7 @@ namespace CactusOSC
 
     public sealed class OSCInfinitum : OSCValue
     {
-        public OSCInfinitum():base(OSCValueType.OSCInfinum)
+        public OSCInfinitum():base(OSCValueType.OSCInfinitum)
         {
             this.setByteSize(0);
             this.setTypeStringSize(1);
@@ -519,7 +519,7 @@ namespace CactusOSC
 
     public sealed class OSCArray : OSCValue
     {
-        public OSCValue[] data;
+        private OSCValue[] data;
 
         public OSCArray(OSCValue[] data):base(OSCValueType.OSCArray)
         {
@@ -552,23 +552,67 @@ namespace CactusOSC
 
         public override string ToString()
         {
+            //need to redo this to be manual recusion so its safe for deep nesting
             StringBuilder stringEdition = new StringBuilder();
             stringEdition.Append("[");
-            for (int index = 0; index < data.Length - 1; index++)
+
+            OSCValue[] currentArray = this.data;
+            Stack <OSCValue[] > subListStack = new Stack<OSCValue[]>();
+
+            int currentIndex = 0;
+            Stack<int> indexStack = new Stack<int>();
+
+            int depth = 0;
+
+            while ((currentIndex < currentArray.Length) || (depth > 0))
             {
-                stringEdition.Append(this.data[index].ToString() + ", ");
+                if (currentArray.Length <= currentIndex)
+                {
+                    stringEdition.Append("]");
+                    currentArray = subListStack.Pop();
+                    currentIndex = indexStack.Pop()+1;
+                    depth--;
+                }
+                else
+                {
+                    if (currentArray[currentIndex].getOSCType() == OSCValueType.OSCArray)
+                    {
+                        subListStack.Push(currentArray);
+                        indexStack.Push(currentIndex);
+
+                        currentArray = ((OSCArray)currentArray[currentIndex]).getRawValue();
+                        currentIndex = 0;
+                        depth++;
+                        stringEdition.Append("[");
+
+                    }
+                    else
+                    {
+                        if (data.Length > 0)
+                        {
+                            stringEdition.Append(currentArray[currentIndex].ToString());
+                            if (currentIndex + 1 < currentArray.Length)
+                            {
+                                stringEdition.Append(", ");
+                            }
+                            currentIndex++;
+                        }
+                            
+                        
+                    }
+                }
+                
             }
-            if (data.Length > 0)
-            {
-                stringEdition.Append(this.data[data.Length - 1].ToString());
-            }
-            
-            stringEdition.Append("]");
+
+
             return stringEdition.ToString();
         }
 
         public override OSCArray clone()
         {
+
+            //TODO: NEED TO UPDATE TO MAKE RECURSION SAFE
+
             OSCValue[] dataclone = new OSCValue[data.Length];
             for (int index = 0; index < dataclone.Length; index++)
             {
@@ -876,6 +920,9 @@ public sealed class OSCBundle : OSCPackage
     }
     public OSCBundle clone()
     {
+
+        //TODO: NEED TO UPDATE TO MAKE RECURSION SAFE
+
         OSCBundleElement[] elementsCopy=new OSCBundleElement[this.elements.Length];
         for (int index = 0; index<this.elements.Length; index++)
         {

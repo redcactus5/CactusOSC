@@ -14,6 +14,7 @@ using System.Buffers.Binary;
 
 using System.Text;
 
+//todo:add recursive bundle and array detection
 
 namespace CactusOSC
 {
@@ -88,7 +89,7 @@ namespace CactusOSC
 
         private int generateArrayTypeString(OSCArray array,RawOSCPackage target)
         {
-
+            //need to be modified to detect and throw on recursive arrays
             
 
 
@@ -99,6 +100,7 @@ namespace CactusOSC
             int bytesWritten = 0;
             bytesWritten=target.writeData(this.openBracketBytes);
 
+            HashSet<OSCArray> seenArrays = new HashSet<OSCArray>();
 
             OSCArray currentArray = array;
             OSCValue[] currentContents = currentArray.getRawValue();
@@ -113,6 +115,11 @@ namespace CactusOSC
                 {
                     if (currentContents[currentIndex].getOSCType() == OSCValueType.OSCArray)
                     {
+                        if (seenArrays.Contains((OSCArray)currentContents[currentIndex]))
+                        {
+                            throw new RecursiveListException();
+                        }
+                        seenArrays.Add((OSCArray)currentContents[currentIndex]);
                         arrayStack.Push(currentArray);
                         restoreIndex.Push(currentIndex+1);
 
@@ -199,7 +206,7 @@ namespace CactusOSC
                 case OSCValueType.OSCNil:
                     return target.writeData(this.typeStrings[13]);
                     break;
-                case OSCValueType.OSCInfinum:
+                case OSCValueType.OSCInfinitum:
                     return target.writeData(this.typeStrings[14]);
                     break;
                 default:
@@ -311,7 +318,7 @@ namespace CactusOSC
                 case OSCValueType.OSCNil:
                     return false;
                     
-                case OSCValueType.OSCInfinum:
+                case OSCValueType.OSCInfinitum:
                     return false;
                     
                 default:
@@ -513,7 +520,7 @@ namespace CactusOSC
             int currentIndex = 0;
 
             
-
+            HashSet<OSCBundle> seenBundles = new HashSet<OSCBundle>();
             
             //write bundle ident
             target.writeData(this.bundleIdent);
@@ -529,6 +536,13 @@ namespace CactusOSC
                 {
                     if (currentContents[currentIndex].getRawContents().getPackageType() == OSCPackageType.OSCBundle)
                     {
+                        if (seenBundles.Contains((OSCBundle)currentContents[currentIndex].getRawContents()))
+                        {
+                            throw new RecursiveBundleException();
+
+                        }
+                        seenBundles.Add((OSCBundle)currentContents[currentIndex].getRawContents());
+
                         subBundleStack.Push(currentBundle);
                         indexStack.Push(currentIndex + 1);
 

@@ -280,4 +280,40 @@ namespace CactusOSC
         {
         }
     }
+
+    class RecursiveListException : InvalidPackageException
+    {
+        public RecursiveListException()
+        {
+        }
+
+        public RecursiveListException(string message)
+            : base(message)
+        {
+        }
+
+        public RecursiveListException(string message, Exception innerException)
+            : base(message, innerException)
+        {
+        }
+
+    }
+    class RecursiveBundleException : InvalidPackageException
+    {
+        public RecursiveBundleException()
+        {
+        }
+
+        public RecursiveBundleException(string message)
+            : base(message)
+        {
+        }
+
+        public RecursiveBundleException(string message, Exception innerException)
+            : base(message, innerException)
+        {
+        }
+
+    }
+
 }
