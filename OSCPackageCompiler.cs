@@ -56,7 +56,7 @@ namespace CactusOSC
         private byte[] writeCache8;
         private byte[] writeCache4;
         private byte[] writecache1;
-
+        
         public OSCPackageCompiler()
         {
             //init the constants and caches
@@ -75,7 +75,7 @@ namespace CactusOSC
 
         }
 
-        private RawOSCPackage generateArrayTypeString(OSCArray array,RawOSCPackage target)
+        private int generateArrayTypeString(OSCArray array,RawOSCPackage target)
         {
 
             
@@ -131,12 +131,11 @@ namespace CactusOSC
                 }
                 bytesWritten= target.writeData(this.closeBracketBytes);
             }
-            bytesWritten = target.writeData(this.nullByte);
+            
 
-            int padding = this.calculateOSCStringOverflowSize(bytesWritten);
-            target.writeData(this.paddingBytes[padding]);
+            return bytesWritten;
 
-            return target;
+            
         }
 
         private int getOSCTypeString(OSCValue value, RawOSCPackage target)
@@ -219,7 +218,7 @@ namespace CactusOSC
                     target.writeData(this.writeCache4);
                     break;
                 case OSCValueType.OSCBlob:
-                    BinaryPrimitives.WriteInt32BigEndian(this.writeCache4, this.calculateOSCStringOverflowSize(((OSCBlob)value).getValue().Length));
+                    BinaryPrimitives.WriteInt32BigEndian(this.writeCache4, ((OSCBlob)value).getValue().Length);
                     target.writeData(this.writeCache4);
                     target.writeData(((OSCBlob)value).getValue());
                     break;
@@ -388,18 +387,24 @@ namespace CactusOSC
 
         private RawOSCPackage generateOSCValueTypeString(OSCValue[] values,RawOSCPackage target)
         {
-            
+            target.writeData(this.commaBytes);
+            int typeStringSize = 1;
             for (int i = 0; i < values.Length; i++)
             {
                 if (values[i].getOSCType() == OSCValueType.OSCArray)
                 {
-                    this.generateArrayTypeString(((OSCArray)values[i]),target);
+                    typeStringSize+=this.generateArrayTypeString(((OSCArray)values[i]),target);
                 }
                 else
                 {
                     this.getOSCTypeString(values[i],target);
+                    typeStringSize++;
+                    
                 }
             }
+            typeStringSize+=target.writeData(this.nullByte);
+            int padding = this.calculateOSCStringOverflowSize(typeStringSize);
+            target.writeData(this.paddingBytes[padding]);
             return target;
         }
 
@@ -530,7 +535,7 @@ namespace CactusOSC
                     else
                     {
                         OSCBundleElement elementCache = currentContents[currentIndex];
-                        BinaryPrimitives.WriteInt32BigEndian(this.writeCache4, elementCache.getSize());
+                        BinaryPrimitives.WriteInt32BigEndian(this.writeCache4, elementCache.getDataSize());
                         target.writeData(this.writeCache4);
                         this.convertOSCMessageToByteArray((OSCMessage)elementCache.getRawContents(),target);
                         currentIndex++;

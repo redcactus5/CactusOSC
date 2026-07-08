@@ -33,7 +33,7 @@ namespace CactusOSC
         private bool sizeSet;
         private int typeStringSize;
         private bool typeStringSizeSet;
-        public  abstract string toString();
+        public  abstract override string ToString();
 
         public abstract OSCValue clone();
         
@@ -113,7 +113,7 @@ namespace CactusOSC
         {
             return this.value;
         }
-        public override string toString()
+        public override string ToString()
         {
             return this.value.ToString();
         }
@@ -137,7 +137,7 @@ namespace CactusOSC
         {
             return this.value;
         }
-        public override string toString()
+        public override string ToString()
         {
             return this.value.ToString();
         }
@@ -162,7 +162,7 @@ namespace CactusOSC
         {
             return this.value;
         }
-        public override string toString()
+        public override string ToString()
         {
             return this.value.ToString();
         }
@@ -204,7 +204,7 @@ namespace CactusOSC
         {
             return this.value;
         }
-        public override string toString()
+        public override string ToString()
         {
             return Convert.ToHexString(this.value);
         }
@@ -230,7 +230,7 @@ namespace CactusOSC
         {
             return this.value;
         }
-        public override string toString()
+        public override string ToString()
         {
             return this.value.ToString();
         }
@@ -255,7 +255,7 @@ namespace CactusOSC
         {
             return this.value;
         }
-        public override string toString()
+        public override string ToString()
         {
             return this.value.ToString();
         }
@@ -278,7 +278,7 @@ namespace CactusOSC
         {
             return this.value;
         }
-        public override string toString()
+        public override string ToString()
         {
             return this.value.ToString();
         }
@@ -320,7 +320,7 @@ namespace CactusOSC
         {
             return this.value;
         }
-        public override string toString()
+        public override string ToString()
         {
             return this.value.ToString();
         }
@@ -346,7 +346,7 @@ namespace CactusOSC
         {
             return this.value;
         }
-        public override string toString()
+        public override string ToString()
         {
             return this.value.ToString();
         }
@@ -388,7 +388,7 @@ namespace CactusOSC
         {
             return (((this.r << 24) & (0xff << 24)) | ((this.g << 16) & (0xff << 16)) | ((this.b << 8) & (0xff << 8)) | ((this.a) & 0xff));
         }
-        public override string toString()
+        public override string ToString()
         {
             return "#"+Convert.ToHexString(new byte[] { this.r, this.g, this.b, this.a });
         }
@@ -428,7 +428,7 @@ namespace CactusOSC
         {
             return (((this.port << 24)&(0xff<<24)) | ((this.status << 16) & (0xff << 16)) | ((this.data1 << 8) & (0xff << 8)) | ((this.data2)&0xff)); ;
         }
-        public override string toString()
+        public override string ToString()
         {
             return "#" + Convert.ToHexString(new byte[] { this.port, this.status, this.data1, this.data2 });
         }
@@ -452,7 +452,7 @@ namespace CactusOSC
         {
             return this.value;
         }
-        public override string toString()
+        public override string ToString()
         {
             return this.value.ToString();
         }
@@ -470,7 +470,7 @@ namespace CactusOSC
         }
         
 
-        public override string toString()
+        public override string ToString()
         {
             return "nil";
         }
@@ -492,7 +492,7 @@ namespace CactusOSC
         }
         
 
-        public override string toString()
+        public override string ToString()
         {
             return "infinitum";
         }
@@ -538,7 +538,7 @@ namespace CactusOSC
             return this.data;
         }
 
-        public override string toString()
+        public override string ToString()
         {
             StringBuilder stringEdition = new StringBuilder();
             stringEdition.Append("[");
@@ -586,6 +586,7 @@ namespace CactusOSC
             this.type = type;
         }
 
+        
         
 
         protected int calculateOSCStringSize(int textLength)
@@ -696,7 +697,7 @@ namespace CactusOSC
         }
 
 
-        public string toString()
+        public override string ToString()
         {
             StringBuilder stringedVersion = new StringBuilder();
             stringedVersion.Append(this.address);
@@ -728,59 +729,95 @@ public class OSCBundle : OSCPackage
     private long timeTag;
     private const int identSize = 8;
     private const int timeTagSize = 8;
+
+
+    public override string ToString()
+    {
+        StringBuilder sb = new StringBuilder();
+
+        Stack<int> subIndexes = new Stack<int>();
+        int index=0;
+        Stack<OSCBundle> childBundles= new Stack<OSCBundle>();
+        OSCBundle currentSubBundle=this;
+        HashSet<OSCPackage> packages= new HashSet<OSCPackage>();
+        packages.Add(this);
+        int depth = 0;
+
+        sb.Append("Bundle(");
+        uint seconds = (uint)(timeTag >> 32);
+        uint fraction = (uint)(timeTag & 0xffffffff);
+        sb.Append(seconds);
+        sb.Append(':');
+        sb.Append(fraction);
+        sb.Append("):");
+        sb.Append("\n");
+
+        while ((index < currentSubBundle.elements.Length) || (depth > 0))
+        {
+            
+            if ((index >= currentSubBundle.getRawElements().Length)&&(depth > 0))
+            {
+                depth--;
+                index=subIndexes.Pop()+1;
+                currentSubBundle=childBundles.Pop();
+            }
+            else
+            {
+                if (currentSubBundle.elements[index].getRawContents().getPackageType() == OSCPackageType.OSCMessage)
+                {
+                    for (int i = 0; i < depth + 1; i++)
+                    {
+                        sb.Append("    ");
+                    }
+                    sb.Append(((OSCMessage)currentSubBundle.elements[index].getRawContents()).ToString());
+                    sb.Append('\n');
+                    index++;
+                }
+                else
+                {
+                    if (packages.Contains((OSCBundle)currentSubBundle.elements[index].getRawContents()))
+                    {
+                        for (int i = 0; i < depth; i++)
+                        {
+                            sb.Append("    ");
+                            
+                        }
+                        sb.Append("<recursive bundle reference>");
+                        sb.Append('\n');
+                    }
+                    else
+                    {
+                        depth++;
+                        subIndexes.Push(index);
+                        index = 0;
+
+                        childBundles.Push(currentSubBundle);
+
+
+                        currentSubBundle = ((OSCBundle)currentSubBundle.elements[index].getRawContents());
+                        packages.Add(currentSubBundle);
+                        for (int i = 0; i < depth; i++)
+                        {
+                            sb.Append("    ");
+                        }
+                        sb.Append("Bundle(");
+                        seconds = (uint)(timeTag >> 32);
+                        fraction = (uint)(timeTag & 0xffffffff);
+                        sb.Append(seconds);
+                        sb.Append(':');
+                        sb.Append(fraction);
+                        sb.Append("):");
+                        sb.Append("\n");
+                    }
+                    
+
+                }
+            }
+            
+        }
+        return sb.ToString();
+    }
     
-    internal List<OSCMessage> RawUnpackBundle()
-    {
-        
-        List<OSCMessage> unpackedValues = new List<OSCMessage>();
-        Queue<OSCBundle> toUnpack = new Queue<OSCBundle>();
-        toUnpack.Enqueue(this);
-        while(toUnpack.Count > 0)
-        {
-            OSCBundle currentBundle= toUnpack.Dequeue();
-            OSCBundleElement[] currentElements= currentBundle.getRawElements();
-            for(int bundleIndex=0; bundleIndex<currentElements.Length; bundleIndex++)
-            {
-                OSCPackage contents = currentElements[bundleIndex].getRawContents();
-                if (contents.getPackageType() == OSCPackageType.OSCBundle)
-                {
-                    toUnpack.Enqueue((OSCBundle)contents);
-                    
-                }
-                else
-                {
-                    unpackedValues.Add((OSCMessage)contents);
-                }
-            }
-        }
-        return unpackedValues;
-    }
-    public List<OSCMessage> UnpackBundle()
-    {
-        
-        List<OSCMessage> unpackedMessages = new List<OSCMessage>();
-        Queue<OSCBundle> toUnpack = new Queue<OSCBundle>();
-        toUnpack.Enqueue(this);
-        while (toUnpack.Count > 0)
-        {
-            OSCBundle currentBundle = toUnpack.Dequeue();
-            OSCBundleElement[] currentElements = currentBundle.getRawElements();
-            for (int bundleIndex = 0; bundleIndex < currentElements.Length; bundleIndex++)
-            {
-                OSCPackage contents = currentElements[bundleIndex].getRawContents();
-                if (contents.getPackageType() == OSCPackageType.OSCBundle)
-                {
-                    
-                    toUnpack.Enqueue((OSCBundle)contents);
-                }
-                else
-                {
-                    unpackedMessages.Add(((OSCMessage)contents).clone());
-                }
-            }
-        }
-        return unpackedMessages;
-    }
     private int getElementsSize()
     {
         int tempSize = 0;
@@ -883,6 +920,10 @@ public class OSCBundleElement
         }
     }
 
+    public string ToString()
+    {
+        return this.contents.ToString();
+    }
     public int getSize()
     {
         return this.size;

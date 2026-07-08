@@ -1,7 +1,7 @@
 ﻿
 
 using System.Buffers.Binary;
-using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 
@@ -25,7 +25,7 @@ namespace CactusOSC
         public OSCPackageInterpreter()
         {
             
-            byte[] bundleTag= Encoding.UTF8.GetBytes("#bundle\0");
+            this.bundleTag= Encoding.UTF8.GetBytes("#bundle\0");
             
             this.messageTag =Encoding.UTF8.GetBytes("/");
 
@@ -73,9 +73,9 @@ namespace CactusOSC
         //self explanitory, checks if a readonly span of bytes has a starting bundle tag
         private bool isBundle(ReadOnlySpan<byte> bytes)
         {
-            if (bytes.Length >= this.bundleTag.Length) {
+            if (bytes.Length >= bundleTagLength) {
                 bool match = true;
-                for (int i = 0; i < this.bundleTag.Length; i++)
+                for (int i = 0; i < bundleTagLength; i++)
                 {
                     if (bytes[i] != this.bundleTag[i])
                     {
@@ -700,8 +700,11 @@ namespace CactusOSC
                 }
             }
             stringReturn0 = this.validateOSCStringDataAndGetLengths(rawData.Slice(byteIndex));
-            byteIndex+= stringReturn0.end+stringReturn0.padding;
+            
+            
             ReadOnlySpan<byte> typeString = rawData.Slice(byteIndex,stringReturn0.end);
+            byteIndex += stringReturn0.end + stringReturn0.padding;
+            
             arguments = this.buildOSCMessageValuesList(typeString, rawData.Slice(byteIndex));
 
             return new OSCMessage(stringReturn1.value, arguments);
@@ -712,7 +715,7 @@ namespace CactusOSC
 
         private int findBundleCountAndCoarseValidate(ReadOnlySpan<byte> rawBundle)
         {
-            
+
             
             //variable for the count
             int bundleCount = 0;
@@ -750,9 +753,12 @@ namespace CactusOSC
                 //read in the item size and incrmeent the readhead by it
                 currentItemSize=BinaryPrimitives.ReadInt32BigEndian(rawBundle.Slice(readHead,sizeTagSize));
                 readHead += sizeTagSize;
+                //acount for the sizeTag
+                int remainingElementSize = currentItemSize;
                 //if the item size is negitive or greater than the remaining length of rawbundle throw
-                if ((currentItemSize < 0) || (rawBundle.Length  < currentItemSize + readHead))
+                if ((currentItemSize < 0) || (rawBundle.Length-readHead  < remainingElementSize))
                 {
+                    
                     throw new InvalidBundleException();
                 }
                 //otherwise test if remaining size is big enough for a bundle header
@@ -823,16 +829,18 @@ namespace CactusOSC
         {
             public BundleTreeBuilderNode[] nodeArray;
             public int maxDepth;
+            public int totalPayloads;
 
-            public findBundleStructureReturn(BundleTreeBuilderNode[] nodeArray, int maxDepth)
+            public findBundleStructureReturn(BundleTreeBuilderNode[] nodeArray, int maxDepth, int totalPayloads)
             {
                 this.nodeArray = nodeArray;
                 this.maxDepth = maxDepth;
+                this.totalPayloads = totalPayloads;
             }
         }
         private findBundleStructureReturn findBundleStructure(ReadOnlySpan<byte> rawBundle)
         {
-            //TODO:
+            
             //a varaible to store the total number of bundles in the array, retreived with a function
             int bundleCount=this.findBundleCountAndCoarseValidate(rawBundle);
             //an array to store all the bundle nodes
@@ -851,6 +859,8 @@ namespace CactusOSC
             int depth = 0;
             //a varaible to store the max depth
             int maxDepth = 0;
+            //a variable to store the total number of payloads that are in this bundle
+            int totalPayloads = 0;
             //get past the root bundle header and create the root node
             readHead += bundleTagLength + timeStampSize;
             currentNode = new BundleTreeBuilderNode(-1,rawBundle.Length);
@@ -859,7 +869,7 @@ namespace CactusOSC
 
 
             //loop while the read head is less than size of the raw bundle
-            while (readHead < rawBundle.Length)
+            while ((readHead < rawBundle.Length)||(depth>0))
             {
                 //if the readhead is greater than or equal to the end position of the current node:
                 if (readHead >= currentNode.endPosition)
@@ -876,48 +886,49 @@ namespace CactusOSC
                     //decrement depth
                     depth--;
                 }
-
-
-                //get the size tag of the current payload and advance the read head past it
-                currentSize=BinaryPrimitives.ReadInt32BigEndian(rawBundle.Slice(readHead,sizeTagSize));
-                readHead +=sizeTagSize;
-                //check if the payload at the current positon is a bundle and if it is:
-                if (isBundle(rawBundle.Slice(readHead)))
-                {
-                    //update the read head
-                    readHead += bundleTagLength + timeStampSize;
-                    //increment the number of children of the current node
-                    currentNode.childNodeCount=currentNode.childNodeCount+1;
-                    //store the current bundle to its position in the array
-                    masterArray[currentIndex] = currentNode;
-                    //create a new bundle at the next open array slot, with its parent node set to the current node index and increment the pointer to that slot,
-                    //set the current index to the index of this new bundle, and set the current bundle to this new bundle
-                    currentNode = new BundleTreeBuilderNode(currentIndex,readHead+currentSize);
-                    currentIndex = nextOpen;
-                    masterArray[currentIndex] = currentNode;
-                    //update the next open slot
-                    nextOpen++;
-                    //increment depth
-                    depth++;
-                    //if current depth is greater than max depth, update it
-                    if(depth> maxDepth)
-                    {
-                        maxDepth = depth;
-                    }
-
-                }
-                //otherwise:
                 else
                 {
-                    // increment message count of the current node and move the read head past it by its size
-                    currentNode.messageCount=currentNode.messageCount+1;
-                    readHead += currentSize;
-
+                    //get the size tag of the current payload and advance the read head past it
+                    currentSize=BinaryPrimitives.ReadInt32BigEndian(rawBundle.Slice(readHead,sizeTagSize));
+                    readHead +=sizeTagSize;
+                    //check if the payload at the current positon is a bundle and if it is:
+                    if (isBundle(rawBundle.Slice(readHead)))
+                    {
+                        
+                        //increment the number of children of the current node
+                        currentNode.childNodeCount=currentNode.childNodeCount+1;
+                        //store the current bundle to its position in the array
+                        masterArray[currentIndex] = currentNode;
+                        //create a new bundle at the next open array slot, with its parent node set to the current node index and increment the pointer to that slot,
+                        //set the current index to the index of this new bundle, and set the current bundle to this new bundle
+                        currentNode = new BundleTreeBuilderNode(currentIndex,readHead+currentSize);
+                        currentIndex = nextOpen;
+                        masterArray[currentIndex] = currentNode;
+                        //update the next open slot
+                        nextOpen++;
+                        //increment depth
+                        depth++;
+                        //if current depth is greater than max depth, update it
+                        if(depth> maxDepth)
+                        {
+                            maxDepth = depth;
+                        }
+                        //update the total payloads count
+                        totalPayloads++;
+                        //update the read head
+                        readHead += bundleTagLength + timeStampSize;
+                    }
+                    //otherwise:
+                    else
+                    {
+                        // increment message count of the current node and move the read head past it by its size
+                        currentNode.messageCount=currentNode.messageCount+1;
+                        readHead += currentSize;
+                        //update the total payloads count
+                        totalPayloads++;
+                    }
                 }
 
-
-                
-                
             }
 
             //populate the final node
@@ -935,6 +946,7 @@ namespace CactusOSC
                 {
                     //goto its parent node, and add its index in the master arry to its parent's children's indexes array at the first open position
                     nodeCache1 = masterArray[nodeCache0.parentIndex];
+                    
                     nodeCache1.childNodesIndexes[nodeCache1.childNodesArrayCurrentIndex] = index;
                     nodeCache1.childNodesArrayCurrentIndex++;
                     masterArray[nodeCache0.parentIndex] = nodeCache1;
@@ -945,19 +957,181 @@ namespace CactusOSC
 
 
             //return the max depth and nodeArray as a struct
-            return new findBundleStructureReturn(masterArray, maxDepth);
+            return new findBundleStructureReturn(masterArray, maxDepth,totalPayloads);
         }
 
 
 
+        private struct convertByteArrayToBundleFrame
+        {
+            public OSCBundleElement[] currentBundleArray;
+            public int currentBundleArrayLength;
+            public int bundleArrayPosition;
+            public BundleTreeBuilderNode currentNode;
+            public int currentChildNode;
+            public long TimeStamp;
+            
 
+            public convertByteArrayToBundleFrame(int bundleArraySize,BundleTreeBuilderNode currentNode,long bundleTimeStamp)
+            {
+                this.currentBundleArray = new OSCBundleElement[bundleArraySize];
+                this.currentBundleArrayLength = bundleArraySize;
+                this.bundleArrayPosition = 0;
+                this.currentNode = currentNode;
+                this.currentChildNode = 0;
+                this.TimeStamp = bundleTimeStamp;
+            }
+        }
 
+        private struct convertByteArrayToBundleStack{
+            private int nextOpenPosition;
+            private convertByteArrayToBundleFrame[] stack;
+            public convertByteArrayToBundleStack(int height)
+            {
+                this.stack= new convertByteArrayToBundleFrame[height];
+                this.nextOpenPosition= 0;
+            }
+
+            public void push(convertByteArrayToBundleFrame frame)
+            {
+                if (this.nextOpenPosition >= stack.Length)
+                {
+                    throw new IndexOutOfRangeException();
+                }
+                this.stack[nextOpenPosition] = frame;
+                this.nextOpenPosition++;
+            }
+
+            public convertByteArrayToBundleFrame pop()
+            {
+                this.nextOpenPosition--;
+                if (this.nextOpenPosition < 0)
+                {
+                    throw new IndexOutOfRangeException();
+                }
+                return this.stack[this.nextOpenPosition];
+            }
+
+            public bool isEmpty()
+            {
+                if((this.nextOpenPosition <= -1))
+                {
+                    throw new IndexOutOfRangeException();
+                }
+                return (this.nextOpenPosition == 0);
+            }
+        }
 
         private OSCBundle ConvertOSCByteArrayToBundle(ReadOnlySpan<byte> rawBundle)
         {
-            //TODO:
 
+            //variable to store the return of finding the bundle structure
+            findBundleStructureReturn structureData = this.findBundleStructure(rawBundle);
+            //variable to store the max depth that we use to size the stack
+            int maxDepth=structureData.maxDepth;
+            //vairable used to store the total number of payloads
+            int totalPayloads=structureData.totalPayloads;
+            //vairable to store the current ammount of payloads processed
+            int processedPayloads = 0;
+            //vairable used to store the master structure array
+            BundleTreeBuilderNode[] masterStructureArray= structureData.nodeArray;
+            //variable to store the stack struct
+            convertByteArrayToBundleStack decodeStack;
+            //varaible to store the current node
+            BundleTreeBuilderNode currentNode; 
+            //variable to store the current stack frame
+            convertByteArrayToBundleFrame currentFrame;
+            //variable to store the current position in the raw bundle
+            int readHead = 0;
+            //variable to store the size of the current item
+            int currentSize = 0;
+            //variable to temporairily store new bundles
+            OSCBundle bundleTemp;
+            //variable to temporailily store timestamps
+            long timeStampTemp;
             
+            //get the root bundle header read in
+            readHead += bundleTagLength;
+            timeStampTemp=BinaryPrimitives.ReadInt64BigEndian(rawBundle.Slice(readHead,timeStampSize));
+            readHead += timeStampSize;
+            //init starting values
+            decodeStack = new convertByteArrayToBundleStack(maxDepth);
+            currentNode = masterStructureArray[0];
+            currentFrame = new convertByteArrayToBundleFrame(currentNode.childNodeCount + currentNode.messageCount, currentNode, timeStampTemp);
+
+            //loop while the current total number of payloads processed is less than the total number of payloads
+            while (processedPayloads < totalPayloads)
+            {
+                //if the current frame's bundle array position is greater than or equal to its length:
+                if (currentFrame.bundleArrayPosition >= currentFrame.currentBundleArrayLength)
+                {
+                    //this sub bundle is finished, so 
+                    //convert the currentframe into a new bundle
+                    bundleTemp = new OSCBundle(currentFrame.currentBundleArray, currentFrame.TimeStamp);
+                    if (decodeStack.isEmpty())
+                    {
+                        throw new InvalidBundleException();
+                    }
+                    //pop the last frame off the stack and set current frame to it
+                    currentFrame=decodeStack.pop();
+                    //get the its current node too
+                    currentNode = currentFrame.currentNode;
+                    //store the new bundle in the current frame
+                    currentFrame.currentBundleArray[currentFrame.bundleArrayPosition]=new OSCBundleElement(bundleTemp);
+                    //update the current position of the current bundle
+                    currentFrame.bundleArrayPosition += 1;
+                    //increment the current amounts of payloads processed
+                    processedPayloads++;
+                }
+                //otherwise:
+                else
+                {
+                    //read in the size of the payload at readhead
+                    currentSize = BinaryPrimitives.ReadInt32BigEndian(rawBundle.Slice(readHead, sizeTagSize));
+                    //advance the readhead past it
+                    readHead += sizeTagSize;
+                    //if the data at readhead is a bundle header:
+                    if (this.isBundle(rawBundle.Slice(readHead)))
+                    {
+                        //move the readhead past the bundle header tag
+                        readHead += bundleTagLength;
+                        //grab its timestamp for later
+                        timeStampTemp = BinaryPrimitives.ReadInt64BigEndian(rawBundle.Slice(readHead, timeStampSize));
+                        //move the readhead past its timestamp
+                        readHead += timeStampSize;
+
+                        //incrment the current current child node of the current frame
+                        currentFrame.currentChildNode += 1;
+                        //push  the current frame to the stack
+                        decodeStack.push(currentFrame);
+                        //make a new stack frame for the  with node of the current frame's next child node pulled from the master structure array, with a size of this new node's children and messages, and with the timestamp we just read
+                        //set the current frame to this new frame
+                        currentNode = masterStructureArray[currentFrame.currentNode.childNodesIndexes[currentFrame.currentChildNode-1]];//-1 here because we incrimetned it for the next use but want the old index for this use
+                        currentFrame = new convertByteArrayToBundleFrame(currentNode.childNodeCount + currentNode.messageCount, currentNode, timeStampTemp);
+                    }
+                    //otherwise:
+                    else
+                    {
+                        //convert the data from the readhead to readHead+payload size into a message
+                        //store the message to the current frame
+                        currentFrame.currentBundleArray[currentFrame.bundleArrayPosition] = new OSCBundleElement(this.convertOSCByteArrayToMessage(rawBundle.Slice(readHead, currentSize)));
+                        //update the current position of the current bundle
+                        currentFrame.bundleArrayPosition += 1;
+                        //increment the current amounts of payloads processed
+                        processedPayloads++;
+                        //move the readhead past the payload
+                        readHead+= currentSize;
+                    }
+
+                }
+
+            }
+
+
+            //convert the current frame to a bundle and return it
+            return new OSCBundle(currentFrame.currentBundleArray, currentFrame.TimeStamp);
+
+
         }
 
 
@@ -967,7 +1141,53 @@ namespace CactusOSC
 
         public OSCPackage convertOSCByteArrayToPackage(ReadOnlySpan<byte> rawPackage)
         {
-            //TODO:
+            if (rawPackage == null)
+            {
+                throw new InvalidPackageException();
+            }
+            int startingPos = 0;
+            bool foundStart = false;
+            while (startingPos < rawPackage.Length)
+            {
+                if (rawPackage[startingPos] == '\0')
+                {
+                    startingPos++;
+                }
+                else
+                {
+                    foundStart = true;
+                    break;
+                }
+            }
+
+            if (!foundStart)
+            {
+                throw new InvalidPackageException();
+            }
+            bool wasBundle = false;
+            
+            if (rawPackage.Length-startingPos >= bundleTagLength)
+            {
+                if (this.isBundle(rawPackage.Slice(startingPos)))
+                {
+                    wasBundle = true;
+                    
+                    return this.ConvertOSCByteArrayToBundle(rawPackage.Slice(startingPos));
+                }
+            }
+            if (!wasBundle)
+            {
+                if(rawPackage.Length-startingPos >=messageTag.Length)
+                {
+                    if (this.isMessage(rawPackage.Slice(startingPos)))
+                    {
+                        
+                        return this.convertOSCByteArrayToMessage(rawPackage.Slice(startingPos));
+                    }
+                }
+            }
+            throw new InvalidPackageException();
+
         }
 
 
