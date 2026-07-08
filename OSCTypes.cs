@@ -86,7 +86,7 @@ namespace CactusOSC
 
     }
 
-    public class OSCString : OSCValue {
+    public sealed class OSCString : OSCValue {
         private string value;
         
         public OSCString(string value):base(OSCValueType.OSCString)
@@ -123,7 +123,7 @@ namespace CactusOSC
         }
     }
 
-    public class OSCInt : OSCValue
+    public sealed class OSCInt : OSCValue
     {
         private int value;
         public OSCInt(int value):base(OSCValueType.OSCInt)
@@ -148,7 +148,7 @@ namespace CactusOSC
     }
 
 
-    public class OSCFloat : OSCValue
+    public sealed class OSCFloat : OSCValue
     {
         private float value;
         public OSCFloat(float value):base(OSCValueType.OSCFloat)
@@ -174,7 +174,7 @@ namespace CactusOSC
     }
 
 
-    public class OSCBlob : OSCValue
+    public sealed class OSCBlob : OSCValue
     {
         
         private byte[] value;
@@ -216,7 +216,7 @@ namespace CactusOSC
     }
 
 
-    public class OSCLong : OSCValue
+    public sealed class OSCLong : OSCValue
     {
         private long value;
         public  OSCLong(long value):base(OSCValueType.OSCLong)
@@ -242,7 +242,7 @@ namespace CactusOSC
 
     }
 
-    public class OSCTimeTag : OSCValue
+    public sealed class OSCTimeTag : OSCValue
     {
         private long value;
         public OSCTimeTag(long value):base(OSCValueType.OSCTimeTag)
@@ -265,7 +265,7 @@ namespace CactusOSC
         }
     }
 
-    public class OSCDouble : OSCValue
+    public sealed class OSCDouble : OSCValue
     {
         private double value;
         public OSCDouble(double value):base(OSCValueType.OSCDouble)
@@ -290,7 +290,7 @@ namespace CactusOSC
     }
 
 
-    public class OSCNonstandardString : OSCValue
+    public sealed class OSCNonstandardString : OSCValue
     {
         private string value;
         public OSCNonstandardString(string value):base(OSCValueType.OSCNonstandardString)
@@ -333,7 +333,7 @@ namespace CactusOSC
 
 
 
-    public class OSCChar : OSCValue
+    public sealed class OSCChar : OSCValue
     {
         private char value;
         public OSCChar(char value):base(OSCValueType.OSCChar)
@@ -357,7 +357,7 @@ namespace CactusOSC
     }
 
 
-    public class OSCColor : OSCValue
+    public sealed class OSCColor : OSCValue
     {
         private byte r;
         private byte g;
@@ -399,7 +399,7 @@ namespace CactusOSC
     }
 
 
-    public class OSCMIDI : OSCValue
+    public sealed class OSCMIDI : OSCValue
     {
         private byte port;
         private byte status;
@@ -439,7 +439,7 @@ namespace CactusOSC
     }
 
 
-    public class OSCBool : OSCValue
+    public sealed class OSCBool : OSCValue
     {
         private bool value;
         public OSCBool(bool value):base(OSCValueType.OSCBool) {
@@ -462,7 +462,7 @@ namespace CactusOSC
         }
     }
 
-    public class OSCNil : OSCValue
+    public sealed class OSCNil : OSCValue
     {
         public OSCNil():base(OSCValueType.OSCNil)
         {
@@ -483,7 +483,7 @@ namespace CactusOSC
     }
 
 
-    public class OSCInfinitum : OSCValue
+    public sealed class OSCInfinitum : OSCValue
     {
         public OSCInfinitum():base(OSCValueType.OSCInfinum)
         {
@@ -505,7 +505,7 @@ namespace CactusOSC
     }
 
 
-    public class OSCArray : OSCValue
+    public sealed class OSCArray : OSCValue
     {
         public OSCValue[] data;
 
@@ -629,7 +629,7 @@ namespace CactusOSC
             }
         }
     }
-    public class OSCMessage: OSCPackage
+    public sealed class OSCMessage: OSCPackage
     {
         private string address;
         private OSCValue[] values;
@@ -723,7 +723,7 @@ namespace CactusOSC
 }
 
 
-public class OSCBundle : OSCPackage
+public sealed class OSCBundle : OSCPackage
 {
     private OSCBundleElement[] elements;
     private long timeTag;
@@ -873,7 +873,7 @@ public class OSCBundle : OSCPackage
     }
 }
 
-public class OSCBundleElement
+public sealed class OSCBundleElement
 {
     private OSCPackage contents;
     private int dataSize;

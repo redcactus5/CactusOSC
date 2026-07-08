@@ -5,7 +5,7 @@ using System.Text;
 
 namespace CactusOSC
 {
-    public class OSCServer
+    public sealed class OSCServer
     {
         private channelManager channelMan;
         private decodeEncodeServer decodeEncodeServer;
