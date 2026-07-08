@@ -37,6 +37,10 @@
           "SelectedChildIndex": 2,
           "Children": [
             {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{aa2115a1-9712-457b-9047-dbb71ca2cdd2}"
+            },
+            {
               "$type": "Document",
               "DocumentIndex": 1,
               "Title": "CactusOSCErrors.cs",
@@ -46,12 +50,7 @@
               "RelativeToolTip": "CactusOSCErrors.cs",
               "ViewState": "AgIAABsBAAAAAAAAAAA3wDcBAAAeAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-07-08T03:36:38.589Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Bookmark",
-              "Name": "ST:0:0:{aa2115a1-9712-457b-9047-dbb71ca2cdd2}"
+              "WhenOpened": "2026-07-08T03:36:38.589Z"
             },
             {
               "$type": "Document",
@@ -61,7 +60,7 @@
               "RelativeDocumentMoniker": "OSCTypes.cs",
               "ToolTip": "C:\\Users\\roboc\\Desktop\\misc\\programming\\c#\\CactusOSC\\OSCTypes.cs",
               "RelativeToolTip": "OSCTypes.cs",
-              "ViewState": "AgIAAC8CAAAAAAAAAAAAADsCAAAtAAAAAAAAAA==",
+              "ViewState": "AgIAAPYBAAAAAAAAAAAgwFECAAAIAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2026-07-08T03:13:47.177Z",
               "EditorCaption": ""
@@ -76,8 +75,7 @@
               "RelativeToolTip": "OSCSendServer.cs",
               "ViewState": "AgIAADYAAAAAAAAAAAAqwEYAAABTAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-07-08T03:09:08.927Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-07-08T03:09:08.927Z"
             },
             {
               "$type": "Document",
@@ -89,8 +87,7 @@
               "RelativeToolTip": "OSCPackageInterpreter.cs",
               "ViewState": "AgIAAB8CAAAAAAAAAAAiwPMAAAA/AAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-07-08T03:00:34.777Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-07-08T03:00:34.777Z"
             },
             {
               "$type": "Document",
@@ -102,8 +99,7 @@
               "RelativeToolTip": "OSCPackageCompiler.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAB0CAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-07-08T02:52:24.895Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-07-08T02:52:24.895Z"
             },
             {
               "$type": "Document",

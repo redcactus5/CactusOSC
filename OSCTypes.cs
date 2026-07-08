@@ -11,7 +11,7 @@ You should have received a copy of the GNU Lesser General Public License along w
 */
 
 using CactusOSC;
-
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace CactusOSC
@@ -523,7 +523,7 @@ namespace CactusOSC
 
         public OSCArray(OSCValue[] data):base(OSCValueType.OSCArray)
         {
-            this.data = data;
+            this.data = (OSCValue[])data.Clone();
             int tempsize = 0;
             int tempTypeStringSize = 0;
             for (int index = 0; index < data.Length; index++) 
@@ -537,15 +537,61 @@ namespace CactusOSC
 
         public OSCValue[] getValue()
         {
-            OSCValue[] dataclone = new OSCValue[data.Length];
-            for (int index = 0; index < dataclone.Length; index++)
+            Stack<OSCValue[]> templateArrayStack = new Stack<OSCValue[]>();
+            OSCValue[] currentTemplate = this.data;
+
+            HashSet<OSCArray> seenLists = new HashSet<OSCArray>();
+
+            seenLists.Add(this);
+            Stack<OSCValue[]> copyStack = new Stack<OSCValue[]>();
+            OSCValue[] copyArray = new OSCValue[currentTemplate.Length];
+
+            Stack<int> IndexStack = new Stack<int>();
+            int currentIndex = 0;
+
+            int depth = 0;
+
+            OSCArray tempArray;
+            while ((currentIndex < currentTemplate.Length) || (depth > 0))
             {
-                dataclone[index] = this.data[index].clone();
+                if (currentIndex >= currentTemplate.Length)
+                {
+                    tempArray = new OSCArray(copyArray);
+                    currentIndex = IndexStack.Pop();
+                    currentTemplate = templateArrayStack.Pop();
+                    copyArray = copyStack.Pop();
+                    copyArray[currentIndex] = tempArray;
+                    currentIndex++;
+                    depth--;
+                }
+                else
+                {
+                    if (currentTemplate[currentIndex].getOSCType() == OSCValueType.OSCArray)
+                    {
+                        if (seenLists.Contains((OSCArray)currentTemplate[currentIndex]))
+                        {
+                            throw new RecursiveListException();
+                        }
+                        seenLists.Add((OSCArray)currentTemplate[currentIndex]);
+                        templateArrayStack.Push(currentTemplate);
+                        copyStack.Push(copyArray);
+                        currentTemplate = ((OSCArray)currentTemplate[currentIndex]).getRawValue();
+                        IndexStack.Push(currentIndex);
+                        currentIndex = 0;
+                        depth++;
+                    }
+                    else
+                    {
+                        copyArray[currentIndex] = currentTemplate[currentIndex].clone();
+                        currentIndex++;
+                    }
+                }
             }
-            return dataclone;
+            return copyArray;
+            
         }
 
-         internal  OSCValue[] getRawValue()
+        internal  OSCValue[] getRawValue()
         {
             return this.data;
         }
@@ -608,17 +654,10 @@ namespace CactusOSC
             return stringEdition.ToString();
         }
 
+
         public override OSCArray clone()
         {
-
-            //TODO: NEED TO UPDATE TO MAKE RECURSION SAFE
-
-            OSCValue[] dataclone = new OSCValue[data.Length];
-            for (int index = 0; index < dataclone.Length; index++)
-            {
-                dataclone[index] = this.data[index].clone();
-            }
-            return new OSCArray(dataclone);
+            return new OSCArray(this.getValue());
         }
     }
 
@@ -907,12 +946,60 @@ public sealed class OSCBundle : OSCPackage
 
     public OSCBundleElement[] getElements()
     {
-        OSCBundleElement[] elementsCopy = new OSCBundleElement[this.elements.Length];
-        for (int index = 0; index < this.elements.Length; index++)
+
+        //TODO: NEED TO UPDATE TO MAKE RECURSION SAFE
+
+        Stack<OSCBundleElement[]> templateArrayStack = new Stack<OSCBundleElement[]>();
+        OSCBundleElement[] currentTemplate = this.elements;
+
+        Stack<OSCBundleElement[]> copyStack = new Stack<OSCBundleElement[]>();
+        OSCBundleElement[] copyArray = new OSCBundleElement[currentTemplate.Length];
+
+        HashSet<OSCBundle> seenBundles = new HashSet<OSCBundle>();
+        seenBundles.Add(this);
+
+        Stack<int> IndexStack = new Stack<int>();
+        int currentIndex = 0;
+
+        int depth = 0;
+
+        OSCBundleElement tempArray;
+        while ((currentIndex < currentTemplate.Length) || (depth > 0))
         {
-            elementsCopy[index] = this.elements[index].clone();
+            if (currentIndex >= currentTemplate.Length)
+            {
+                tempArray = new OSCBundleElement(new OSCBundle(copyArray));
+                currentIndex = IndexStack.Pop();
+                currentTemplate = templateArrayStack.Pop();
+                copyArray = copyStack.Pop();
+                copyArray[currentIndex] = tempArray;
+                currentIndex++;
+                depth--;
+            }
+            else
+            {
+                if (currentTemplate[currentIndex].getRawContents().getPackageType() == OSCPackageType.OSCBundle)
+                {
+                    if (seenBundles.Contains((OSCBundle)currentTemplate[currentIndex].getRawContents()))
+                    {
+                        throw new RecursiveBundleException();
+                    }
+                    seenBundles.Add((OSCBundle)currentTemplate[currentIndex].getRawContents());
+                    templateArrayStack.Push(currentTemplate);
+                    copyStack.Push(copyArray);
+                    currentTemplate = ((OSCBundle)currentTemplate[currentIndex].getRawContents()).getRawElements();
+                    IndexStack.Push(currentIndex);
+                    currentIndex = 0;
+                    depth++;
+                }
+                else
+                {
+                    copyArray[currentIndex] = currentTemplate[currentIndex].clone();
+                    currentIndex++;
+                }
+            }
         }
-        return elementsCopy;
+        return copyArray;
     }
     internal OSCBundleElement[] getRawElements()
     {
@@ -920,15 +1007,8 @@ public sealed class OSCBundle : OSCPackage
     }
     public OSCBundle clone()
     {
-
-        //TODO: NEED TO UPDATE TO MAKE RECURSION SAFE
-
-        OSCBundleElement[] elementsCopy=new OSCBundleElement[this.elements.Length];
-        for (int index = 0; index<this.elements.Length; index++)
-        {
-            elementsCopy[index]= this.elements[index].clone();
-        }
-        return new OSCBundle(elementsCopy,this.timeTag);
+        
+        return new OSCBundle(this.getElements(),this.timeTag);
     }
     public long getTimeTag()
     {
