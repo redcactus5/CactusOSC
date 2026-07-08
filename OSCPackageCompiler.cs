@@ -123,7 +123,7 @@ namespace CactusOSC
                     }
                     else
                     {
-                        bytesWritten = this.getOSCTypeString(currentContents[currentIndex], target);
+                        bytesWritten += this.getOSCTypeString(currentContents[currentIndex], target);
                         currentIndex++;
                     }
                     
@@ -203,7 +203,7 @@ namespace CactusOSC
                     return target.writeData(this.typeStrings[14]);
                     break;
                 default:
-                        throw new Exception("invalid OSCValueType!");
+                        throw new InvalidOSCValueTypeException();
                     break;
                     
             }
@@ -262,7 +262,7 @@ namespace CactusOSC
                     target.writeData(writeCache4);
                     break;
                 default:
-                    throw new InvalidOSCValueType();
+                    throw new InvalidOSCValueTypeException();
                     
             }
             return target;

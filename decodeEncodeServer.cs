@@ -80,7 +80,7 @@ namespace CactusOSC
                 this.encodeFinishedTcs.SetResult(true);
                 this.encodeFinishedTcs = null;
             }
-            this.encodeFinishedTcs=new TaskCompletionSource<bool>();
+            this.encodeFinishedTcs=new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
             this.inFlightCount = 0;
             this.inFlightCountGate=new SemaphoreSlim(1);
 
@@ -95,10 +95,9 @@ namespace CactusOSC
                 this.shutDownTrigger.Cancel();
                 
             }
-            if (this.inFlightCountGate.CurrentCount ==0)
-            {
-                this.inFlightCountGate.Release();
-            }
+            
+            this.inFlightCountGate.Release();
+            
             
         }
 
@@ -156,7 +155,12 @@ namespace CactusOSC
 
         public async Task waitForEncodequeueFinish()
         {
-            await this.encodeFinishedTcs.Task;
+            TaskCompletionSource<bool> tcs = this.encodeFinishedTcs;
+            if (tcs != null)
+            {
+                await tcs.Task;
+            }
+            
         }
 
         private byte[] encodePackage(OSCPackage package)
@@ -199,50 +203,56 @@ namespace CactusOSC
             byte[] inputCache;
             
             OSCPackage[] finishArray=new OSCPackage[1024];
-            
-            while (!this.shutDownTrigger.IsCancellationRequested)
+            try
             {
-                await reader.WaitToReadAsync(shutDownTrigger.Token);
-                
-                
-                while(reader.TryRead(out inputCache))
+                while (!this.shutDownTrigger.IsCancellationRequested)
                 {
-                    input[inputIndex]=(inputCache);
-                    inputIndex++;
-                    if (inputIndex >= 1024)
+                    await reader.WaitToReadAsync(shutDownTrigger.Token);
+
+
+                    while (reader.TryRead(out inputCache))
                     {
-                        break;
+                        input[inputIndex] = (inputCache);
+                        inputIndex++;
+                        if (inputIndex >= 1024)
+                        {
+                            break;
+                        }
+
                     }
-                        
+
+                    Parallel.For(0, inputIndex, currentElement =>
+                    {
+
+                        try
+                        {
+                            OSCPackage packageCache = this.decodePackage(input[currentElement]);
+                            finishArray[currentElement] = packageCache;
+                        }
+                        catch (InvalidPackageException e)
+                        {
+                            finishArray[currentElement] = null;
+                            Console.WriteLine(e);
+
+                        }
+
+                    });
+
+                    for (int i = 0; i < inputIndex; i++)
+                    {
+                        if (finishArray[i] != null)
+                        {
+                            this.decodedPackages.Enqueue(finishArray[i]);
+                        }
+
+                    }
+                    inputIndex = 0;
                 }
-                
-                Parallel.For(0,inputIndex,currentElement =>
-                {
-                    
-                    try
-                    {
-                        OSCPackage packageCache = this.decodePackage(input[currentElement]);
-                        finishArray[currentElement] = packageCache;
-                    }
-                    catch(InvalidPackageException e)
-                    {
-                        finishArray[currentElement] = null;
-                        Console.WriteLine(e);
-                        
-                    }
-                    
-                });
-                
-                for (int i = 0; i < inputIndex; i++)
-                {
-                    if (finishArray[i] != null)
-                    {
-                        this.decodedPackages.Enqueue(finishArray[i]);
-                    }
-                    
-                }
-                inputIndex = 0;
             }
+            catch (OperationCanceledException)
+            {
+            }
+            
         }
 
 
@@ -255,43 +265,50 @@ namespace CactusOSC
             OSCPackage inputCache;
 
             byte[][] finishArray = new byte[1024][];
-            while (!this.shutDownTrigger.IsCancellationRequested)
+            try
             {
-                await reader.WaitToReadAsync(shutDownTrigger.Token);
-                await encodeGate.WaitAsync();
-                encodeGate.Release();
-                while (reader.TryRead(out inputCache))
+                while (!this.shutDownTrigger.IsCancellationRequested)
                 {
-                    input[inputIndex] = (inputCache);
-                    inputIndex++;
-                    if (inputIndex >= 1024)
+                    await reader.WaitToReadAsync(shutDownTrigger.Token);
+                    await encodeGate.WaitAsync();
+                    encodeGate.Release();
+                    while (reader.TryRead(out inputCache))
                     {
-                        break;
+                        input[inputIndex] = (inputCache);
+                        inputIndex++;
+                        if (inputIndex >= 1024)
+                        {
+                            break;
+                        }
+
                     }
 
-                }
-
-                Parallel.For(0, inputIndex, currentElement =>
-                {
-                    finishArray[currentElement] = (this.encodePackage(input[currentElement]));
-                });
-
-                for (int i = 0; i < inputIndex; i++)
-                {
-                    this.serverBridge.transferPackageToSend(finishArray[i]);
-                }
-                await this.inFlightCountGate.WaitAsync();
-                if(this.encodeFinishedTcs != null)
-                {
-                    this.inFlightCount -= inputIndex;
-                    if (this.inFlightCount == 0)
+                    Parallel.For(0, inputIndex, currentElement =>
                     {
-                        this.encodeFinishedTcs.SetResult(true);
-                        this.encodeFinishedTcs = null;
+                        finishArray[currentElement] = (this.encodePackage(input[currentElement]));
+                    });
+
+                    for (int i = 0; i < inputIndex; i++)
+                    {
+                        this.serverBridge.transferPackageToSend(finishArray[i]);
                     }
+                    await this.inFlightCountGate.WaitAsync();
+                    if (this.encodeFinishedTcs != null)
+                    {
+                        this.inFlightCount -= inputIndex;
+                        if (this.inFlightCount == 0)
+                        {
+                            this.encodeFinishedTcs.SetResult(true);
+                            this.encodeFinishedTcs = null;
+                        }
+                    }
+                    this.inFlightCountGate.Release();
+                    inputIndex = 0;
                 }
-                this.inFlightCountGate.Release();
-                inputIndex = 0;
+
+            }
+            catch (OperationCanceledException)
+            {
             }
         }
 

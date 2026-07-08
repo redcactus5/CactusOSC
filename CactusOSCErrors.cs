@@ -264,18 +264,18 @@ namespace CactusOSC
         }
     }
 
-    public class InvalidOSCValueType : Exception
+    public class InvalidOSCValueTypeException : Exception
     {
-        public InvalidOSCValueType()
+        public InvalidOSCValueTypeException()
         {
         }
 
-        public InvalidOSCValueType(string message)
+        public InvalidOSCValueTypeException(string message)
             : base(message)
         {
         }
 
-        public InvalidOSCValueType(string message, Exception innerException)
+        public InvalidOSCValueTypeException(string message, Exception innerException)
             : base(message, innerException)
         {
         }
