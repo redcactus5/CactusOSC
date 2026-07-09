@@ -27,7 +27,7 @@ namespace CactusOSC
 
         private CancellationTokenSource shutDownTrigger;
 
-        private ConcurrentQueue<OSCPackageCompiler> compilers;
+        private OSCPackageCompiler compiler;
         private OSCPackageInterpreter interpreter;
         private SemaphoreSlim encodeGate;
 
@@ -38,11 +38,11 @@ namespace CactusOSC
 
         public DecodeEncodeServer(ChannelManager channelKeeper)
         {
-            
-            
-            
-            
-            this.compilers = new ConcurrentQueue<OSCPackageCompiler>();
+
+
+
+
+            this.compiler = new OSCPackageCompiler();
             
             this.interpreter = new OSCPackageInterpreter();
             this.encodeGate = new SemaphoreSlim(1);
@@ -73,11 +73,7 @@ namespace CactusOSC
             
             
 
-            OSCPackageCompiler garbageDisposal;
-            while (compilers.TryDequeue(out garbageDisposal))
-            {
-                garbageDisposal = null;
-            }
+         
 
             this.EncoderServer = this.encodeService();
             this.DecoderServer = this.DecodingService();
@@ -200,26 +196,24 @@ namespace CactusOSC
 
         private byte[] encodePackage(OSCPackage package)
         {
-            OSCPackageCompiler compiler;
-            if (!this.compilers.TryDequeue(out compiler))
+            RawOSCPackage tempRawPackage = new RawOSCPackage(package.GetSize());
+            switch (package.GetPackageType())
             {
-                compiler = new OSCPackageCompiler();
-            }
-            if (package.getPackageType() == OSCPackageType.OSCBundle)
-            {
-                RawOSCPackage tempRawPackage = new RawOSCPackage(package.getSize());
-                compiler.convertOSCBundleToByteArray(((OSCBundle)package), tempRawPackage);
-                this.compilers.Enqueue(compiler);
-                return tempRawPackage.getRawData();
+                case OSCPackageType.OSCBundle:
+                    
+                    compiler.convertOSCBundleToByteArray(((OSCBundle)package), tempRawPackage);
 
+                    return tempRawPackage.getRawData();
+
+                case OSCPackageType.OSCMessage:
+                    
+                    compiler.convertOSCMessageToByteArray(((OSCMessage)package), tempRawPackage);
+                    return tempRawPackage.getRawData();
+
+                default:
+                    throw new InvalidPackageException();
             }
-            else
-            {
-                RawOSCPackage tempRawPackage = new RawOSCPackage(package.getSize());
-                compiler.convertOSCMessageToByteArray(((OSCMessage)package), tempRawPackage);
-                this.compilers.Enqueue(compiler);
-                return tempRawPackage.getRawData();
-            }
+            
         }
 
 

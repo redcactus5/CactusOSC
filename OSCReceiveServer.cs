@@ -19,13 +19,13 @@ namespace CactusOSC
     {
         UdpClient receiveServer;
         private string address;
-        private UInt16 port;
+        private ushort port;
         private Channel<byte[]> messagePool;
         private CancellationTokenSource shutdownTrigger;
         private Task receiveTask;
         private ChannelManager converterBridge;
 
-        public OSCReceiveServer(ChannelManager converterBridge, string address, UInt16 port)
+        public OSCReceiveServer(ChannelManager converterBridge, string address, ushort port)
         {
             this.address = address;
             this.port = port;

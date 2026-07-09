@@ -18,7 +18,7 @@ namespace CactusOSC
     {
         UdpClient sendServer;
         private string address;
-        private UInt16 port;
+        private ushort port;
         private Channel<byte[]> messageQueue;
         private CancellationTokenSource shutdownTrigger;
         private Task sendTask;
@@ -27,7 +27,7 @@ namespace CactusOSC
         private TaskCompletionSource<bool> sendFinished;
     
 
-        public OSCSendServer(ChannelManager converterBridge, string address, UInt16 port)
+        public OSCSendServer(ChannelManager converterBridge, string address, ushort port)
         {
 
             this.address = address;

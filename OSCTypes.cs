@@ -11,6 +11,7 @@ You should have received a copy of the GNU Lesser General Public License along w
 */
 
 
+using System.Reflection.Metadata;
 using System.Text;
 
 namespace CactusOSC
@@ -35,7 +36,10 @@ namespace CactusOSC
     }
 
 
-
+    /// <summary>
+    /// the base class for all osc values.
+    /// do not extend, all OSC types are hard coded in the serializer/deserializer, and new osc value classes will not be recognized.
+    /// </summary>
     public abstract class OSCValue
     {
 
@@ -44,15 +48,31 @@ namespace CactusOSC
         private bool sizeSet;
         private int typeStringSize;
         private bool typeStringSizeSet;
+        /// <summary>
+        /// get a string representation of the internal value of an OSCValue Object
+        /// </summary>
+        /// <returns>string</returns>
         public abstract override string ToString();
 
+        /// <summary>
+        /// returns a copy of an OSCValue Object
+        /// </summary>
+        /// <returns>OSCValue</returns>
         public abstract OSCValue Clone();
 
-        public OSCValueType getOSCType()
+        /// <summary>
+        /// get the type enum value of an OSCValue
+        /// </summary>
+        /// <returns>OSCValueType</returns>
+        public OSCValueType GetOSCType()
         {
             return this.oscType;
         }
 
+        /// <summary>
+        /// the constructor of abstract class OSCValue
+        /// </summary>
+        /// <param name="type"></param>
         public OSCValue(OSCValueType type)
         {
             this.size = -1;
@@ -85,10 +105,18 @@ namespace CactusOSC
             }
         }
 
+        /// <summary>
+        /// get the size of an OSCValue in bytes
+        /// </summary>
+        /// <returns>int</returns>
         public int getByteSize()
         {
             return this.size;
         }
+        /// <summary>
+        /// get the Number of characters in typeString of an OSCValue
+        /// </summary>
+        /// <returns>int</returns>
         public int getTypeStringSize()
         {
             return this.typeStringSize;
@@ -97,10 +125,17 @@ namespace CactusOSC
 
     }
 
+    /// <summary>
+    /// an immutable OSC string
+    /// </summary>
     public sealed class OSCString : OSCValue
     {
         private string value;
 
+        /// <summary>
+        /// creates a new OSCString with a string internal value
+        /// </summary>
+        /// <param name="value"></param>
         public OSCString(string value) : base(OSCValueType.OSCString)
         {
             this.value = value;
@@ -122,63 +157,110 @@ namespace CactusOSC
             this.setTypeStringSize(1);
         }
 
-        public string getValue()
+        /// <summary>
+        /// get the string internal value of a OSCString
+        /// </summary>
+        /// <returns>string</returns>
+        public string GetValue()
         {
             return this.value;
         }
+        /// <summary>
+        /// gets the string representation of a OSCString's internal value
+        /// </summary>
+        /// <returns>string</returns>
         public override string ToString()
         {
             return this.value.ToString();
         }
+        /// <summary>
+        /// creates a copy of an OSCString Object
+        /// </summary>
+        /// <returns>OSCString</returns>
         public override OSCString Clone()
         {
             return new OSCString(this.value);
         }
     }
 
+    /// <summary>
+    /// an immuatable OSC integer
+    /// </summary>
     public sealed class OSCInt : OSCValue
     {
         private int value;
+        /// <summary>
+        /// creates a new OSCOInt with an integer internal value
+        /// </summary>
+        /// <param name="value"></param>
         public OSCInt(int value) : base(OSCValueType.OSCInt)
         {
             this.value = value;
             this.setByteSize(4);
             this.setTypeStringSize(1);
         }
-
-        public int getValue()
+        /// <summary>
+        /// gets the integer internal value of an OSCInt
+        /// </summary>
+        /// <returns>int</returns>
+        public int GetValue()
         {
             return this.value;
         }
+        /// <summary>
+        /// gets the string representation of an OSCInt's internal Value
+        /// </summary>
+        /// <returns>string</returns>
         public override string ToString()
         {
             return this.value.ToString();
         }
+        /// <summary>
+        /// creates a copy of an OSCInt object
+        /// </summary>
+        /// <returns>OSCInt</returns>
         public override OSCInt Clone()
         {
             return new OSCInt(this.value);
         }
     }
 
-
+    /// <summary>
+    /// an immutable OSCF loat
+    /// </summary>
     public sealed class OSCFloat : OSCValue
     {
         private float value;
+        /// <summary>
+        /// creates a new OSCFloat with a float internal value
+        /// </summary>
+        /// <param name="value"></param>
         public OSCFloat(float value) : base(OSCValueType.OSCFloat)
         {
             this.value = value;
             this.setByteSize(4);
             this.setTypeStringSize(1);
         }
-
-        public float getValue()
+        /// <summary>
+        /// gets the float internal value of an OSCFloat
+        /// </summary>
+        /// <returns>float</returns>
+        public float GetValue()
         {
             return this.value;
         }
+        /// <summary>
+        /// gets the string representation of an OSCFloat's internal value
+        /// </summary>
+        /// <returns>string</returns>
         public override string ToString()
         {
             return this.value.ToString();
         }
+        /// <summary>
+        /// creates a copy of an OSCFloat object
+        /// </summary>
+        /// <returns>OSCFloat</returns>
         public override OSCFloat Clone()
         {
             return new OSCFloat(this.value);
@@ -186,11 +268,17 @@ namespace CactusOSC
 
     }
 
-
+    /// <summary>
+    /// an immutable OSC blob
+    /// </summary>
     public sealed class OSCBlob : OSCValue
     {
 
         private byte[] value;
+        /// <summary>
+        /// creates a new OSCBlob with a byte[] internal value
+        /// </summary>
+        /// <param name="value"></param>
         public OSCBlob(byte[] value) : base(OSCValueType.OSCBlob)
         {
 
@@ -214,19 +302,31 @@ namespace CactusOSC
 
         }
 
-        public byte[] getValue()
+        /// <summary>
+        /// gets the byte[] internal Value of an OSCBlob
+        /// </summary>
+        /// <returns>byte[]</returns>
+        public byte[] GetValue()
         {
             return (byte[])this.value.Clone();
         }
 
-        internal byte[] getRawValue()
+        internal byte[] GetRawValue()
         {
             return this.value;
         }
+        /// <summary>
+        /// gets the string representation of an OSCBlob's internal value
+        /// </summary>
+        /// <returns></returns>
         public override string ToString()
         {
             return Convert.ToHexString(this.value);
         }
+        /// <summary>
+        /// creates a deep copy of an OSCBlob
+        /// </summary>
+        /// <returns>OSCBlob</returns>
         public override OSCBlob Clone()
         {
             return new OSCBlob((byte[])this.value.Clone());
@@ -234,10 +334,16 @@ namespace CactusOSC
 
     }
 
-
+    /// <summary>
+    /// an immutable OSC long
+    /// </summary>
     public sealed class OSCLong : OSCValue
     {
         private long value;
+        /// <summary>
+        /// creates a new OSCLong with a long internal value
+        /// </summary>
+        /// <param name="value"></param>
         public OSCLong(long value) : base(OSCValueType.OSCLong)
         {
             this.value = value;
@@ -245,15 +351,26 @@ namespace CactusOSC
             this.setTypeStringSize(1);
 
         }
-        public long getValue()
+        /// <summary>
+        /// gets the long internal Value of an OSCLong
+        /// </summary>
+        /// <returns>long</returns>
+        public long GetValue()
         {
             return this.value;
         }
+        /// <summary>
+        /// gets the string representation of an OSCLong's internal value
+        /// </summary>
+        /// <returns>string</returns>
         public override string ToString()
         {
             return this.value.ToString();
         }
-
+        /// <summary>
+        /// creates a copy of an OSCLong
+        /// </summary>
+        /// <returns>OSCLong</returns>
         public override OSCLong Clone()
         {
             return new OSCLong(this.value);
@@ -261,46 +378,129 @@ namespace CactusOSC
 
     }
 
+    public struct OSCTimeTagValue
+    {
+        public uint networkTimeWhole;
+        public uint networkTimeFraction;
+
+        
+        public OSCTimeTagValue(uint networkTimeWhole, uint networkTimeFraction)
+        {
+            this.networkTimeWhole = networkTimeWhole;
+            this.networkTimeFraction = networkTimeFraction;
+            
+        }
+
+        public OSCTimeTagValue(ulong rawNetworkTimeValue)
+        {
+            
+            this.networkTimeWhole = (uint)(rawNetworkTimeValue >> 32);
+            this.networkTimeFraction = (uint)(networkTimeWhole & ((ulong)0xFFFFFFFF));
+        }
+
+        public ulong GetRawNetworkTimeValue()
+        {
+            return ((ulong)(((ulong)networkTimeWhole)<<32)|((ulong)networkTimeFraction));
+        }
+        
+        
+    }
+    /// <summary>
+    /// an immutable OSC timetag
+    /// </summary>
     public sealed class OSCTimeTag : OSCValue
     {
-        private long value;
-        public OSCTimeTag(long value) : base(OSCValueType.OSCTimeTag)
+        private ulong value;
+        /// <summary>
+        /// creates a new OSCTimeTag with a ulong internal value
+        /// </summary>
+        /// <param name="value"></param>
+        public OSCTimeTag(ulong value) : base(OSCValueType.OSCTimeTag)
         {
             this.value = value;
             this.setByteSize(8);
             this.setTypeStringSize(1);
         }
-        public long getValue()
+        /// <summary>
+        /// creates a new OSCTimeTag with a ulong internal value
+        /// </summary>
+        /// <param name="value"></param>
+        public OSCTimeTag(OSCTimeTagValue value) : base(OSCValueType.OSCTimeTag)
+        {
+            this.value = value.GetRawNetworkTimeValue();
+            this.setByteSize(8);
+            this.setTypeStringSize(1);
+        }
+        /// <summary>
+        /// gets the ulong internal Value of an OSCTimeTag
+        /// </summary>
+        /// <returns>Long</returns>
+        public ulong getValue()
         {
             return this.value;
         }
+        /// <summary>
+        /// gets the OSCTimeTagValue struct internal Value of an OSCTimeTag
+        /// </summary>
+        /// <returns>Long</returns>
+        public OSCTimeTagValue getParsedValue()
+        {
+            return new OSCTimeTagValue(this.value);
+        }
+        /// <summary>
+        /// gets the string representation of an OSCTimeTag's internal value
+        /// </summary>
+        /// <returns></returns>
         public override string ToString()
         {
             return this.value.ToString();
         }
+        /// <summary>
+        /// creates a copy of an OSC TimeTag
+        /// </summary>
+        /// <returns>OSCTimeTag</returns>
         public override OSCTimeTag Clone()
         {
             return new OSCTimeTag(this.value);
         }
     }
 
+    /// <summary>
+    /// an immutible OSC double
+    /// </summary>
     public sealed class OSCDouble : OSCValue
     {
         private double value;
+        /// <summary>
+        /// creates a new OSCDouble with a double internal value
+        /// </summary>
+        /// <param name="value"></param>
         public OSCDouble(double value) : base(OSCValueType.OSCDouble)
         {
             this.value = value;
             this.setByteSize(8);
             this.setTypeStringSize(1);
         }
-        public double getValue()
+        /// <summary>
+        /// gets the double internal Value of an OSCTDouble
+        /// </summary>
+        /// <returns>double</returns>
+        public double GetValue()
         {
             return this.value;
         }
+        /// <summary>
+        /// gets the string representation of an OSCDouble's internal value
+        /// </summary>
+        /// <returns>string</returns>
         public override string ToString()
         {
             return this.value.ToString();
         }
+        /// <summary>
+        /// creates a copy of an OSCDouble
+        /// </summary>
+        /// <returns>OSCDouble</returns>
         public override OSCDouble Clone()
         {
             return new OSCDouble(this.value);
@@ -308,10 +508,16 @@ namespace CactusOSC
 
     }
 
-
+    /// <summary>
+    /// an immutible OSC string for when the standard oscString has been reassigned
+    /// </summary>
     public sealed class OSCNonstandardString : OSCValue
     {
         private string value;
+        /// <summary>
+        /// creates a new OSCNonstandardString with a string internal value
+        /// </summary>
+        /// <param name="value"></param>
         public OSCNonstandardString(string value) : base(OSCValueType.OSCNonstandardString)
         {
             this.value = value;
@@ -335,14 +541,26 @@ namespace CactusOSC
             this.setByteSize(tempsize);
             this.setTypeStringSize(1);
         }
-        public string getValue()
+        /// <summary>
+        /// gets the string internal Value of an OSCNonstandardString
+        /// </summary>
+        /// <returns>string</returns>
+        public string GetValue()
         {
             return this.value;
         }
+        /// <summary>
+        /// gets the string representation of an OSCNonstandardString's internal value
+        /// </summary>
+        /// <returns>string</returns>
         public override string ToString()
         {
             return this.value.ToString();
         }
+        /// <summary>
+        /// creates a copy of an OSCNonstandardString
+        /// </summary>
+        /// <returns>OSCNonstandardString</returns>
         public override OSCNonstandardString Clone()
         {
             return new OSCNonstandardString(this.value);
@@ -351,24 +569,43 @@ namespace CactusOSC
     }
 
 
-
+    /// <summary>
+    /// an immutable osc character
+    /// </summary>
     public sealed class OSCChar : OSCValue
     {
         private char value;
+
+        /// <summary>
+        /// creates a new OSCChar with a char internal value
+        /// </summary>
+        /// <param name="value"></param>
         public OSCChar(char value) : base(OSCValueType.OSCChar)
         {
             this.value = value;
             this.setByteSize(4);
             this.setTypeStringSize(1);
         }
-        public char getValue()
+        /// <summary>
+        /// gets the char internal Value of an OSCChar
+        /// </summary>
+        /// <returns>char</returns>
+        public char GetValue()
         {
             return this.value;
         }
+        /// <summary>
+        /// gets the string representation of an OSCChar's internal value
+        /// </summary>
+        /// <returns>string</returns>
         public override string ToString()
         {
             return this.value.ToString();
         }
+        /// <summary>
+        /// creates a copy of an OSCChar
+        /// </summary>
+        /// <returns>OSCChar</returns>
         public override OSCChar Clone()
         {
             return new OSCChar(this.value);
@@ -376,6 +613,47 @@ namespace CactusOSC
     }
 
 
+    public struct OSCColorValue
+    {
+        public byte r;
+        public byte g;
+        public byte b;
+        public byte a;
+        
+
+        public OSCColorValue(byte r, byte g, byte b, byte a){
+            this.r = r;
+            this.g = g;
+            this.b = b;
+            this.a = a;
+        }
+
+        public OSCColorValue(int rgba)
+        {
+            this.setColor(rgba);
+        }
+
+        public void setColor(int rgba)
+        {
+            this.r = (byte)((rgba >> 24) & 0xff);
+            this.g = (byte)((rgba >> 16) & 0xff);
+            this.b = (byte)((rgba >> 8) & 0xff);
+            this.a = (byte)(rgba & 0xff);
+        }
+
+        public int getColor(int rgba)
+        {
+            return (((this.r << 24) & (0xff << 24)) | ((this.g << 16) & (0xff << 16)) | ((this.b << 8) & (0xff << 8)) | ((this.a) & 0xff));
+        }
+            
+
+
+    }
+
+
+    /// <summary>
+    /// an immutible osc rgba color
+    /// </summary>
     public sealed class OSCColor : OSCValue
     {
         private byte r;
@@ -383,6 +661,10 @@ namespace CactusOSC
         private byte b;
         private byte a;
 
+        /// <summary>
+        /// creates a new OSCColor with an rgba internal value
+        /// </summary>
+        /// <param name="value"></param>
         public OSCColor(byte r, byte g, byte b, byte a) : base(OSCValueType.OSCRGBA)
         {
             this.r = r;
@@ -393,6 +675,24 @@ namespace CactusOSC
             this.setTypeStringSize(1);
 
         }
+        /// <summary>
+        /// creates a new OSCColor with an rgba internal value
+        /// </summary>
+        /// <param name="value"></param>
+        public OSCColor(OSCColorValue value) : base(OSCValueType.OSCRGBA)
+        {
+            this.r = value.r;
+            this.g = value.g;
+            this.b = value.b;
+            this.a = value.a;
+            this.setByteSize(4);
+            this.setTypeStringSize(1);
+
+        }
+        /// <summary>
+        /// creates a new OSCColor with an rgba internal value
+        /// </summary>
+        /// <param name="value"></param>
         public OSCColor(int rgba) : base(OSCValueType.OSCRGBA)
         {
             this.r = (byte)((rgba >> 24) & 0xff);
@@ -403,14 +703,34 @@ namespace CactusOSC
             this.setTypeStringSize(1);
 
         }
-        public int getValue()
+        /// <summary>
+        /// gets the int internal Value of an OSCColor
+        /// </summary>
+        /// <returns>int</returns>
+        public int GetValue()
         {
             return (((this.r << 24) & (0xff << 24)) | ((this.g << 16) & (0xff << 16)) | ((this.b << 8) & (0xff << 8)) | ((this.a) & 0xff));
         }
+        /// <summary>
+        /// gets the OSCColorValue internal Value of an OSCColor
+        /// </summary>
+        /// <returns>OSCColorValue</returns>
+        public OSCColorValue GetDecodedValue()
+        {
+            return new OSCColorValue(this.r, this.g, this.b, this.a);
+        }
+        /// <summary>
+        /// gets the string representation of an OSCColor's internal value
+        /// </summary>
+        /// <returns>string</returns>
         public override string ToString()
         {
             return "#" + Convert.ToHexString(new byte[] { this.r, this.g, this.b, this.a });
         }
+        /// <summary>
+        /// creates a copy of an OSCColor
+        /// </summary>
+        /// <returns>OSCColor</returns>
         public override OSCColor Clone()
         {
             return new OSCColor(this.r, this.g, this.b, this.a);
@@ -418,6 +738,40 @@ namespace CactusOSC
     }
 
 
+    public struct OSCMidiValue
+    {
+        public byte port;
+        public byte status;
+        public byte data1;
+        public byte data2;
+
+        public OSCMidiValue(byte port, byte status, byte data1, byte data2)
+        {
+            this.port = port;
+            this.status = status;
+            this.data1 = data1;
+            this.data2 = data2;
+        }
+
+        public OSCMidiValue(int midiMessage)
+        {
+            this.port = (byte)((midiMessage >> 24) & 0xff);
+            this.status = (byte)((midiMessage >> 16) & 0xff);
+            this.data1 = (byte)((midiMessage >> 8) & 0xff);
+            this.data2 = (byte)(midiMessage & 0xff);
+        }
+
+        public int GetMessage()
+        {
+            return (((this.port << 24) & (0xff << 24)) | ((this.status << 16) & (0xff << 16)) | ((this.data1 << 8) & (0xff << 8)) | ((this.data2) & 0xff)); ;
+        }
+    }
+
+
+
+    /// <summary>
+    /// an immutible osc midi message
+    /// </summary>
     public sealed class OSCMIDI : OSCValue
     {
         private byte port;
@@ -425,6 +779,10 @@ namespace CactusOSC
         private byte data1;
         private byte data2;
 
+        /// <summary>
+        /// creates a new OSCMidi with an midi message internal value
+        /// </summary>
+        /// <param name="value"></param>
         public OSCMIDI(byte port, byte status, byte data1, byte data2) : base(OSCValueType.OSCMIDI)
         {
             this.port = port;
@@ -434,6 +792,23 @@ namespace CactusOSC
             this.setByteSize(4);
             this.setTypeStringSize(1);
         }
+        /// <summary>
+        /// creates a new OSCMidi with an midi message internal value
+        /// </summary>
+        /// <param name="value"></param>
+        public OSCMIDI(OSCMidiValue midiMessage) : base(OSCValueType.OSCMIDI)
+        {
+            this.port = midiMessage.port;
+            this.status = midiMessage.status;
+            this.data1 = midiMessage.data1;
+            this.data2 = midiMessage.data2;
+            this.setByteSize(4);
+            this.setTypeStringSize(1);
+        }
+        /// <summary>
+        /// creates a new OSCMidi with an midi message internal value
+        /// </summary>
+        /// <param name="value"></param>
         public OSCMIDI(int midiMessage) : base(OSCValueType.OSCMIDI)
         {
             this.port = (byte)((midiMessage >> 24) & 0xff);
@@ -443,24 +818,50 @@ namespace CactusOSC
             this.setByteSize(4);
             this.setTypeStringSize(1);
         }
-        public int getValue()
+        /// <summary>
+        /// gets the int internal Value of an OSCMidi
+        /// </summary>
+        /// <returns>int</returns>
+        public int GetValue()
         {
             return (((this.port << 24) & (0xff << 24)) | ((this.status << 16) & (0xff << 16)) | ((this.data1 << 8) & (0xff << 8)) | ((this.data2) & 0xff)); ;
         }
+        /// <summary>
+        /// gets the OSCMidiValue internal Value of an OSCColor
+        /// </summary>
+        /// <returns>OSCMidiValue</returns>
+        public OSCMidiValue GetDecodedValue()
+        {
+            return new OSCMidiValue(this.port,this.status,this.data1,this.data2);
+        }
+        /// <summary>
+        /// gets the string representation of an OSCMIDI's internal value
+        /// </summary>
+        /// <returns>string</returns>
         public override string ToString()
         {
             return "#" + Convert.ToHexString(new byte[] { this.port, this.status, this.data1, this.data2 });
         }
+        /// <summary>
+        /// creates a copy of an OSCMidi
+        /// </summary>
+        /// <returns>OSCMidi</returns>
         public override OSCMIDI Clone()
         {
             return new OSCMIDI(this.port, this.status, this.data1, this.data2);
         }
     }
 
-
+    /// <summary>
+    /// an immutible osc boolean value (can be either true or false, maps onto the true or false typeChars in the osc spec)
+    /// </summary>
     public sealed class OSCBool : OSCValue
     {
         private bool value;
+        /// <summary>
+        /// creates a new OSCBool with an bool internal value
+        /// </summary>
+        /// <param name="value"></param>
         public OSCBool(bool value) : base(OSCValueType.OSCBool)
         {
 
@@ -468,28 +869,49 @@ namespace CactusOSC
             this.setByteSize(0);
             this.setTypeStringSize(1);
         }
-        public bool getValue()
+        /// <summary>
+        /// gets the bool internal Value of an OSCBool
+        /// </summary>
+        /// <returns>bool</returns>
+        public bool GetValue()
         {
             return this.value;
         }
+        /// <summary>
+        /// gets the string representation of an OSCBool's internal value
+        /// </summary>
+        /// <returns>string</returns>
         public override string ToString()
         {
             return this.value.ToString();
         }
+        /// <summary>
+        /// creates a copy of an OSCBool
+        /// </summary>
+        /// <returns>OSCBool</returns>
         public override OSCBool Clone()
         {
             return new OSCBool(this.value);
         }
     }
 
+    /// <summary>
+    /// an immutible osc value of nil
+    /// </summary>
     public sealed class OSCNil : OSCValue
     {
+        /// <summary>
+        /// creates a new OSCNil
+        /// </summary>
         public OSCNil() : base(OSCValueType.OSCNil)
         {
             this.setByteSize(0);
         }
 
-
+        /// <summary>
+        /// gets the string representation of an OSCNil's internal value
+        /// </summary>
+        /// <returns>string</returns>
         public override string ToString()
         {
             return "nil";
@@ -502,21 +924,32 @@ namespace CactusOSC
 
     }
 
-
+    /// <summary>
+    /// an immmutible oscValue of bang
+    /// </summary>
     public sealed class OSCInfinitum : OSCValue
     {
+        /// <summary>
+        /// creates a new OSCInfinitum
+        /// </summary>
         public OSCInfinitum() : base(OSCValueType.OSCInfinitum)
         {
             this.setByteSize(0);
             this.setTypeStringSize(1);
         }
 
-
+        /// <summary>
+        /// gets the string representation of an OSCInfinitim's internal value
+        /// </summary>
+        /// <returns>string</returns>
         public override string ToString()
         {
             return "infinitum";
         }
-
+        /// <summary>
+        /// creates a copy of an OSCInfinitum
+        /// </summary>
+        /// <returns>OSCInfinitum</returns>
         public override OSCInfinitum Clone()
         {
             return new OSCInfinitum();
@@ -524,11 +957,17 @@ namespace CactusOSC
 
     }
 
-
+    /// <summary>
+    /// an immutible container for mutliple osc values, that itself is an osc value. it represents an array in the typestring. for more details see the official osc docs
+    /// </summary>
     public sealed class OSCArray : OSCValue
     {
         private OSCValue[] data;
 
+        /// <summary>
+        /// creates a new osc OSCArray with an OSCValue[] internal value
+        /// </summary>
+        /// <param name="data"></param>
         public OSCArray(OSCValue[] data) : base(OSCValueType.OSCArray)
         {
             this.data = (OSCValue[])data.Clone();
@@ -542,8 +981,12 @@ namespace CactusOSC
             this.setByteSize(tempsize);
             this.setTypeStringSize(2 + tempTypeStringSize);
         }
-
-        public OSCValue[] getValue()
+        /// <summary>
+        /// get a deep copy of the values in an OSCArray
+        /// </summary>
+        /// <returns>OSCValue[]</returns>
+        /// <exception cref="RecursiveListException"></exception>
+        public OSCValue[] GetValue()
         {
             Stack<OSCValue[]> templateArrayStack = new Stack<OSCValue[]>();
             OSCValue[] currentTemplate = this.data;
@@ -574,7 +1017,7 @@ namespace CactusOSC
                 }
                 else
                 {
-                    if (currentTemplate[currentIndex].getOSCType() == OSCValueType.OSCArray)
+                    if (currentTemplate[currentIndex].GetOSCType() == OSCValueType.OSCArray)
                     {
                         if (seenLists.Contains((OSCArray)currentTemplate[currentIndex]))
                         {
@@ -583,7 +1026,7 @@ namespace CactusOSC
                         seenLists.Add((OSCArray)currentTemplate[currentIndex]);
                         templateArrayStack.Push(currentTemplate);
                         copyStack.Push(copyArray);
-                        currentTemplate = ((OSCArray)currentTemplate[currentIndex]).getRawValue();
+                        currentTemplate = ((OSCArray)currentTemplate[currentIndex]).GetRawValue();
                         IndexStack.Push(currentIndex);
                         currentIndex = 0;
                         depth++;
@@ -599,14 +1042,17 @@ namespace CactusOSC
 
         }
 
-        internal OSCValue[] getRawValue()
+        internal OSCValue[] GetRawValue()
         {
             return this.data;
         }
-
+        /// <summary>
+        /// get the string representation of an OSCArray
+        /// </summary>
+        /// <returns>string</returns>
         public override string ToString()
         {
-            //need to redo this to be manual recusion so its safe for deep nesting
+            
             StringBuilder stringEdition = new StringBuilder();
             stringEdition.Append("[");
 
@@ -629,12 +1075,12 @@ namespace CactusOSC
                 }
                 else
                 {
-                    if (currentArray[currentIndex].getOSCType() == OSCValueType.OSCArray)
+                    if (currentArray[currentIndex].GetOSCType() == OSCValueType.OSCArray)
                     {
                         subListStack.Push(currentArray);
                         indexStack.Push(currentIndex);
 
-                        currentArray = ((OSCArray)currentArray[currentIndex]).getRawValue();
+                        currentArray = ((OSCArray)currentArray[currentIndex]).GetRawValue();
                         currentIndex = 0;
                         depth++;
                         stringEdition.Append("[");
@@ -662,10 +1108,13 @@ namespace CactusOSC
             return stringEdition.ToString();
         }
 
-
+        /// <summary>
+        /// create a deep copy of an OSC Array
+        /// </summary>
+        /// <returns>OSCArray</returns>
         public override OSCArray Clone()
         {
-            return new OSCArray(this.getValue());
+            return new OSCArray(this.GetValue());
         }
     }
 
@@ -676,14 +1125,20 @@ namespace CactusOSC
         OSCBundle
     }
 
-
+    /// <summary>
+    /// the base class for OSC messages and bundles. do not extend.
+    /// </summary>
     public abstract class OSCPackage
     {
         private OSCPackageType type;
         protected int size;
         private bool sizeSet;
 
-        public OSCPackageType getPackageType()
+        /// <summary>
+        /// get the OSCPackage Type
+        /// </summary>
+        /// <returns>OSCPackageType</returns>
+        public OSCPackageType GetPackageType()
         {
             return this.type;
         }
@@ -696,7 +1151,7 @@ namespace CactusOSC
 
 
 
-        protected int calculateOSCStringSize(int textLength)
+        protected int CalculateOSCStringSize(int textLength)
         {
             int tempsize = textLength;
             if (tempsize > 0)
@@ -717,13 +1172,16 @@ namespace CactusOSC
             return tempsize;
         }
 
-
-        public int getSize()
+        /// <summary>
+        /// get the size of the OSCPackage
+        /// </summary>
+        /// <returns>int</returns>
+        public int GetSize()
         {
             return this.size;
         }
 
-        protected void setSize(int size)
+        protected void SetSize(int size)
         {
             if (!this.sizeSet)
             {
@@ -736,6 +1194,10 @@ namespace CactusOSC
             }
         }
     }
+
+    /// <summary>
+    /// an immutible osc message
+    /// </summary>
     public sealed class OSCMessage : OSCPackage
     {
         private string address;
@@ -743,13 +1205,17 @@ namespace CactusOSC
 
 
 
-
+        /// <summary>
+        /// create an OSCMessage
+        /// </summary>
+        /// <param name="address"></param>
+        /// <param name="values"></param>
         public OSCMessage(string address, OSCValue[] values) : base(OSCPackageType.OSCMessage)
         {
 
             this.address = address;
             this.values = values;
-            int adressSize = this.calculateOSCStringSize(Encoding.UTF8.GetByteCount(address) + 1);
+            int adressSize = this.CalculateOSCStringSize(Encoding.UTF8.GetByteCount(address) + 1);
             //account for the comma that denotes its start and the null terminator
             int typeStringSize = 2;
             //calculate the data size and typestring size
@@ -761,23 +1227,34 @@ namespace CactusOSC
             }
             //calculate the final size
 
-            typeStringSize = this.calculateOSCStringSize(typeStringSize);
-            this.setSize(adressSize + typeStringSize + dataSize);
+            typeStringSize = this.CalculateOSCStringSize(typeStringSize);
+            this.SetSize(adressSize + typeStringSize + dataSize);
 
         }
+        /// <summary>
+        /// create an OSCMessage
+        /// </summary>
+        /// <param name="address"></param>
         public OSCMessage(string address) : base(OSCPackageType.OSCMessage)
         {
             this.address = address;
             this.values = Array.Empty<OSCValue>();
             //account for the type string
-            this.setSize(this.calculateOSCStringSize(Encoding.UTF8.GetByteCount(address) + 1) + calculateOSCStringSize(2));
+            this.SetSize(this.CalculateOSCStringSize(Encoding.UTF8.GetByteCount(address) + 1) + CalculateOSCStringSize(2));
         }
-        public string getAddress()
+        /// <summary>
+        /// get the adress string of the OSCMessage
+        /// </summary>
+        /// <returns>string</returns>
+        public string GetAddress()
         {
             return this.address;
         }
-
-        public OSCValue[] getValues()
+        /// <summary>
+        /// get the Values of the OSCMessage
+        /// </summary>
+        /// <returns></returns>
+        public OSCValue[] GetValues()
         {
             OSCValue[] Clone = new OSCValue[this.values.Length];
             for (int index = 0; index < Clone.Length; index++)
@@ -786,11 +1263,17 @@ namespace CactusOSC
             }
             return Clone;
         }
-        internal OSCValue[] getRawValues()
+        internal OSCValue[] GetRawValues()
         {
             return this.values;
         }
 
+        /// <summary>
+        /// get a value from an osc array at an index
+        /// </summary>
+        /// <param name="index"></param>
+        /// <returns></returns>
+        /// <exception cref="IndexOutOfRangeException"></exception>
         public OSCValue GetValue(int index)
         {
             if ((index < this.values.Length) && (index >= 0))
@@ -803,7 +1286,10 @@ namespace CactusOSC
             }
         }
 
-
+        /// <summary>
+        /// get the string representation of an oscMessage
+        /// </summary>
+        /// <returns>string</returns>
         public override string ToString()
         {
             StringBuilder stringedVersion = new StringBuilder();
@@ -815,7 +1301,10 @@ namespace CactusOSC
             }
             return stringedVersion.ToString();
         }
-
+        /// <summary>
+        /// create a deep copy of an OSCMessage
+        /// </summary>
+        /// <returns>OSCMessage</returns>
         public OSCMessage Clone()
         {
             OSCValue[] valueListCopy = new OSCValue[this.values.Length];
@@ -829,15 +1318,20 @@ namespace CactusOSC
     }
 
 
-
+    /// <summary>
+    /// an immutible osc bundle
+    /// </summary>
     public sealed class OSCBundle : OSCPackage
     {
         private OSCBundleElement[] elements;
-        private long timeTag;
+        private ulong timeTag;
         private const int identSize = 8;
         private const int timeTagSize = 8;
 
-
+        /// <summary>
+        /// get a string rperesentation of an OSCBundle
+        /// </summary>
+        /// <returns>string </returns>
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
@@ -862,7 +1356,7 @@ namespace CactusOSC
             while ((index < currentSubBundle.elements.Length) || (depth > 0))
             {
 
-                if ((index >= currentSubBundle.getRawElements().Length) && (depth > 0))
+                if ((index >= currentSubBundle.GetRawElements().Length) && (depth > 0))
                 {
                     depth--;
                     index = subIndexes.Pop() + 1;
@@ -870,19 +1364,19 @@ namespace CactusOSC
                 }
                 else
                 {
-                    if (currentSubBundle.elements[index].getRawContents().getPackageType() == OSCPackageType.OSCMessage)
+                    if (currentSubBundle.elements[index].GetRawContents().GetPackageType() == OSCPackageType.OSCMessage)
                     {
                         for (int i = 0; i < depth + 1; i++)
                         {
                             sb.Append("    ");
                         }
-                        sb.Append(((OSCMessage)currentSubBundle.elements[index].getRawContents()).ToString());
+                        sb.Append(((OSCMessage)currentSubBundle.elements[index].GetRawContents()).ToString());
                         sb.Append('\n');
                         index++;
                     }
                     else
                     {
-                        if (packages.Contains((OSCBundle)currentSubBundle.elements[index].getRawContents()))
+                        if (packages.Contains((OSCBundle)currentSubBundle.elements[index].GetRawContents()))
                         {
                             for (int i = 0; i < depth; i++)
                             {
@@ -901,7 +1395,7 @@ namespace CactusOSC
                             childBundles.Push(currentSubBundle);
 
 
-                            currentSubBundle = ((OSCBundle)currentSubBundle.elements[index].getRawContents());
+                            currentSubBundle = ((OSCBundle)currentSubBundle.elements[index].GetRawContents());
                             packages.Add(currentSubBundle);
                             for (int i = 0; i < depth; i++)
                             {
@@ -925,13 +1419,13 @@ namespace CactusOSC
             return sb.ToString();
         }
 
-        private int getElementsSize()
+        private int GetElementsSize()
         {
             int tempSize = 0;
 
             for (int elementIndex = 0; elementIndex < this.elements.Length; elementIndex++)
             {
-                tempSize += this.elements[elementIndex].getSize();
+                tempSize += this.elements[elementIndex].GetSize();
 
             }
 
@@ -939,20 +1433,34 @@ namespace CactusOSC
 
             return tempSize;
         }
-        public OSCBundle(OSCBundleElement[] elements, long timeTag) : base(OSCPackageType.OSCBundle)
+        /// <summary>
+        /// create a new OSCBundle
+        /// </summary>
+        /// <param name="elements"></param>
+        /// <param name="timeTag"></param>
+        public OSCBundle(OSCBundleElement[] elements, ulong timeTag) : base(OSCPackageType.OSCBundle)
         {
-            this.elements = elements;
+            this.elements = (OSCBundleElement[])elements.Clone();
             this.timeTag = timeTag;
-            this.setSize(this.getElementsSize() + identSize + timeTagSize);
+            this.SetSize(this.GetElementsSize() + identSize + timeTagSize);
         }
+        /// <summary>
+        /// create a new OSCBundle with a default timeTag
+        /// </summary>
+        /// <param name="elements"></param>
         public OSCBundle(OSCBundleElement[] elements) : base(OSCPackageType.OSCBundle)
         {
-            this.elements = elements;
+            this.elements = (OSCBundleElement[])elements.Clone();
             this.timeTag = 1;
-            this.setSize(this.getElementsSize() + identSize + timeTagSize);
+            this.SetSize(this.GetElementsSize() + identSize + timeTagSize);
         }
 
-        public OSCBundleElement[] getElements()
+        /// <summary>
+        /// get an array of all the elements of the bundle
+        /// </summary>
+        /// <returns>OSCBundleElement[]</returns>
+        /// <exception cref="RecursiveBundleException"></exception>
+        public OSCBundleElement[] GetElements()
         {
 
             
@@ -986,16 +1494,16 @@ namespace CactusOSC
                 }
                 else
                 {
-                    if (currentTemplate[currentIndex].getRawContents().getPackageType() == OSCPackageType.OSCBundle)
+                    if (currentTemplate[currentIndex].GetRawContents().GetPackageType() == OSCPackageType.OSCBundle)
                     {
-                        if (seenBundles.Contains((OSCBundle)currentTemplate[currentIndex].getRawContents()))
+                        if (seenBundles.Contains((OSCBundle)currentTemplate[currentIndex].GetRawContents()))
                         {
                             throw new RecursiveBundleException();
                         }
-                        seenBundles.Add((OSCBundle)currentTemplate[currentIndex].getRawContents());
+                        seenBundles.Add((OSCBundle)currentTemplate[currentIndex].GetRawContents());
                         templateArrayStack.Push(currentTemplate);
                         copyStack.Push(copyArray);
-                        currentTemplate = ((OSCBundle)currentTemplate[currentIndex].getRawContents()).getRawElements();
+                        currentTemplate = ((OSCBundle)currentTemplate[currentIndex].GetRawContents()).GetRawElements();
                         IndexStack.Push(currentIndex);
                         currentIndex = 0;
                         depth++;
@@ -1009,21 +1517,41 @@ namespace CactusOSC
             }
             return copyArray;
         }
-        internal OSCBundleElement[] getRawElements()
+        internal OSCBundleElement[] GetRawElements()
         {
             return this.elements;
         }
+        /// <summary>
+        /// create a deep copy of the OSCBundle
+        /// </summary>
+        /// <returns>OSCBundle</returns>
         public OSCBundle Clone()
         {
 
-            return new OSCBundle(this.getElements(), this.timeTag);
+            return new OSCBundle(this.GetElements(), this.timeTag);
         }
-        public long getTimeTag()
+        /// <summary>
+        /// get the raw timetag value of the bundle
+        /// </summary>
+        /// <returns>ulong</returns>
+        public ulong GetTimeTag()
         {
             return this.timeTag;
         }
+        /// <summary>
+        /// get the parsed timeTagValue of the Bundle
+        /// </summary>
+        /// <returns>OSCTimeTagValue</returns>
+        public OSCTimeTagValue getParsedTimeTag()
+        {
+            return new OSCTimeTagValue(this.timeTag);
+        }
     }
 
+
+    /// <summary>
+    /// an immutible wrapper for an osc bundle element
+    /// </summary>
     public sealed class OSCBundleElement
     {
         private OSCPackage contents;
@@ -1034,53 +1562,55 @@ namespace CactusOSC
             this.contents = contents;
 
 
-            this.dataSize = this.contents.getSize();
+            this.dataSize = this.contents.GetSize();
             //account for the size integer
             this.size = 4 + this.dataSize;
         }
 
         public OSCBundleElement Clone()
         {
-            return new OSCBundleElement(this.getContents());
+            return new OSCBundleElement(this.GetContents());
         }
-        public OSCPackage getContents()
+        public OSCPackage GetContents()
         {
-            if (this.contents.getPackageType() == OSCPackageType.OSCMessage)
+            switch (this.contents.GetPackageType())
             {
-                OSCMessage tempMessage = (OSCMessage)this.contents;
-                return tempMessage.Clone();
+                case OSCPackageType.OSCMessage:
+                    OSCMessage tempMessage = (OSCMessage)this.contents;
+                    return tempMessage.Clone();
+                case OSCPackageType.OSCBundle:
+                    OSCBundle tempBundle = (OSCBundle)this.contents;
+                    return (tempBundle.Clone());
+                default:
+                    throw new InvalidBundleElementException();
             }
-            else
-            {
-                OSCBundle tempBundle = (OSCBundle)this.contents;
-                return (tempBundle.Clone());
-            }
+            
         }
 
-        internal OSCPackage getRawContents()
+        internal OSCPackage GetRawContents()
         {
-            if (this.contents.getPackageType() == OSCPackageType.OSCMessage)
-            {
-                OSCMessage tempMessage = (OSCMessage)this.contents;
-                return tempMessage;
-            }
-            else
-            {
-                OSCBundle tempBundle = (OSCBundle)this.contents;
-                return tempBundle;
-            }
+            return this.contents;
         }
 
         public string ToString()
         {
-            return this.contents.ToString();
+            switch (this.contents.GetPackageType()) { 
+            case OSCPackageType.OSCMessage:
+                OSCMessage tempMessage = (OSCMessage)this.contents;
+                return tempMessage.ToString();
+            case OSCPackageType.OSCBundle:
+                OSCBundle tempBundle = (OSCBundle)this.contents;
+                return tempBundle.ToString();
+            default:
+                throw new InvalidBundleElementException();
+            }
         }
-        public int getSize()
+        public int GetSize()
         {
             return this.size;
         }
 
-        public int getDataSize()
+        public int GetDataSize()
         {
             return this.dataSize;
         }

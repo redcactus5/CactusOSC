@@ -24,11 +24,11 @@ it comes fully featured with:
 
 
 
-just create and start an OSCServer object and you are good to go! messages will automatically be processed and queued, and building messages is easy, just assemble them out of the provided classes.
+just create and start an OSCServer object and you are good to go! messages will automatically be processed and queued, and building messages is easy, just assemble them out of the provided classes. or, if you arent using UDP, or just want to get your hands dirty use the RawOSCConverter class to manually convert your object trees into sendable data and back!
 
 
 
-there is no real documentation or example code as of yet(sorry! its on my todo list!), but it should be understandable with just the types file and some trial and error.
+there is no real documentation, but it should be understandable with just the types file and some trial and error.
 
 
 

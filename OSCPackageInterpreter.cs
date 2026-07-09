@@ -256,7 +256,7 @@ namespace CactusOSC
                     {
                         throw new IncompleteOSCDataException();
                     }
-                    return new OSCvalueConversionReturn(8, new OSCTimeTag(BinaryPrimitives.ReadInt64BigEndian(data.Slice(startIndex, 8))));
+                    return new OSCvalueConversionReturn(8, new OSCTimeTag(BinaryPrimitives.ReadUInt64BigEndian(data.Slice(startIndex, 8))));
 
                 case 'd':
                     if ((startIndex + OSCLongSize) > data.Length)
@@ -978,10 +978,10 @@ namespace CactusOSC
             public int bundleArrayPosition;
             public BundleTreeBuilderNode currentNode;
             public int currentChildNode;
-            public long TimeStamp;
+            public ulong TimeStamp;
             
 
-            public convertByteArrayToBundleFrame(int bundleArraySize,BundleTreeBuilderNode currentNode,long bundleTimeStamp)
+            public convertByteArrayToBundleFrame(int bundleArraySize,BundleTreeBuilderNode currentNode,ulong bundleTimeStamp)
             {
                 this.currentBundleArray = new OSCBundleElement[bundleArraySize];
                 this.currentBundleArrayLength = bundleArraySize;
@@ -1057,11 +1057,11 @@ namespace CactusOSC
             //variable to temporairily store new bundles
             OSCBundle bundleTemp;
             //variable to temporailily store timestamps
-            long timeStampTemp;
+            ulong timeStampTemp;
             
             //get the root bundle header read in
             readHead += bundleTagLength;
-            timeStampTemp=BinaryPrimitives.ReadInt64BigEndian(rawBundle.Slice(readHead,timeStampSize));
+            timeStampTemp=BinaryPrimitives.ReadUInt64BigEndian(rawBundle.Slice(readHead,timeStampSize));
             readHead += timeStampSize;
             //init starting values
             decodeStack = new convertByteArrayToBundleStack(maxDepth);
@@ -1105,7 +1105,7 @@ namespace CactusOSC
                         //move the readhead past the bundle header tag
                         readHead += bundleTagLength;
                         //grab its timestamp for later
-                        timeStampTemp = BinaryPrimitives.ReadInt64BigEndian(rawBundle.Slice(readHead, timeStampSize));
+                        timeStampTemp = BinaryPrimitives.ReadUInt64BigEndian(rawBundle.Slice(readHead, timeStampSize));
                         //move the readhead past its timestamp
                         readHead += timeStampSize;
 
