@@ -11,26 +11,24 @@ You should have received a copy of the GNU Lesser General Public License along w
 */
 namespace CactusOSC
 {
-    public sealed class OSCServer
+    public sealed class OSCServer : IDisposable
     {
-        private channelManager channelMan;
-        private decodeEncodeServer decodeEncodeServer;
-        private OSCReceiveServer OSCReceiveServer;
-        private OSCSendServer OSCSendServer;
+        private ChannelManager channelMan;
+        private DecodeEncodeServer decoderEncoder;
+        private OSCReceiveServer OSCReceiver;
+        private OSCSendServer OSCSender;
         private string sendIP;
         private ushort sendPort;
         private ushort receivePort;
         private string receiveIP;
-        private bool started=false;
+        private bool started;
+        private int channelCapacity;
+        private bool boundedMode;
+        private CancellationTokenSource shutdownTrigger;
 
-        public OSCServer(ushort receivePort, string receiveIP, ushort  sendPort, string sendIP)
+        public OSCServer()
         {
-            this.receivePort = receivePort;
-            this.sendPort = sendPort;
-            this.sendIP = sendIP;
-            this.receiveIP = receiveIP;
-
-            
+            started = false;
 
         }
 
@@ -40,7 +38,7 @@ namespace CactusOSC
         {
             if (started)
             {
-                return this.decodeEncodeServer.tryGetDecodedPackage(out targetPackage);
+                return this.decoderEncoder.tryGetDecodedPackage(out targetPackage);
             }
             else
             {
@@ -54,7 +52,7 @@ namespace CactusOSC
         {
             if (started)
             {
-                return this.decodeEncodeServer.getDecodedPackageList();
+                return this.decoderEncoder.getDecodedPackageList();
             }
             else
             {
@@ -67,7 +65,7 @@ namespace CactusOSC
         {
             if (started)
             {
-                this.decodeEncodeServer.enqueuePackageEncoding(packageToSend).Wait();
+                this.decoderEncoder.enqueuePackageEncoding(packageToSend).GetAwaiter().GetResult();
             }
             else
             {
@@ -76,17 +74,44 @@ namespace CactusOSC
             
         }
 
-        public void sendOSCPackageList(List<OSCPackage> packageListToSend)
+        public async Task SendOSCPackageAsync(OSCPackage packageToSend)
         {
             if (started)
             {
-                this.decodeEncodeServer.enqueuePackageListEncoding(packageListToSend).Wait();
+                await decoderEncoder.enqueuePackageEncoding(packageToSend);
             }
             else
             {
                 throw new serverNotStartedException();
             }
             
+        }
+
+
+        public void sendOSCPackageList(List<OSCPackage> packageListToSend)
+        {
+            if (started)
+            {
+                this.decoderEncoder.enqueuePackageListEncoding(packageListToSend).GetAwaiter().GetResult();
+            }
+            else
+            {
+                throw new serverNotStartedException();
+            }
+            
+        }
+
+        public async Task sendOSCPackageListAsync(List<OSCPackage> packageListToSend)
+        {
+            if (started)
+            {
+                await this.decoderEncoder.enqueuePackageListEncoding(packageListToSend);
+            }
+            else
+            {
+                throw new serverNotStartedException();
+            }
+
         }
 
 
@@ -94,8 +119,8 @@ namespace CactusOSC
         {
             if (started)
             {
-                this.decodeEncodeServer.waitForEncodequeueFinish().Wait();
-                this.OSCSendServer.waitForSendFinish();
+                this.decoderEncoder.waitForEncodeQueueFinish().GetAwaiter().GetResult();
+                this.OSCSender.waitForSendFinish();
             }
             else
             {
@@ -103,35 +128,148 @@ namespace CactusOSC
             }
         }
 
-        public void startOSCServer()
+        public async Task waitForSendCompletionAsync()
+        {
+            if (started)
+            {
+                await this.decoderEncoder.waitForEncodeQueueFinish();
+                await this.OSCSender.AsyncWaitForSendFinish();
+            }
+            else
+            {
+                throw new serverNotStartedException();
+            }
+        }
+
+        public async Task waitForOSCPackageReceptionAsync()
+        {
+            if (started)
+            {
+                await channelMan.getReceivedPackagesChannel().Reader.WaitToReadAsync(shutdownTrigger.Token);
+            }
+            else
+            {
+                throw new serverNotStartedException();
+            }
+
+        }
+
+        public void waitForOSCPackageReception()
+        {
+            if (started)
+            {
+                channelMan.getReceivedPackagesChannel().Reader.WaitToReadAsync(shutdownTrigger.Token).GetAwaiter().GetResult();
+            }  
+            else
+            {
+                throw new serverNotStartedException();
+            }
+        }
+
+        public bool isSendQueueFull()
+        {
+            if (started)
+            {
+                if (this.boundedMode)
+                {
+                    if (channelMan.getPackagesToEncodeChannel().Reader.Count >= this.channelCapacity)
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+            else
+            {
+                throw new serverNotStartedException();
+            }
+        }
+
+        public void Dispose()
+        {
+            
+            if(shutdownTrigger!= null)
+            {
+                shutdownTrigger.Dispose();
+                shutdownTrigger = null;
+            }
+            
+        }
+        public void waitForSendQueueSpace()
+        {
+            if (started)
+            {
+                if (this.boundedMode)
+                {
+                    channelMan.getPackagesToSendChannel().Writer.WaitToWriteAsync().AsTask().GetAwaiter().GetResult();
+                }
+                
+            }
+            else
+            {
+                throw new serverNotStartedException();
+            }
+            
+        }
+
+        public async Task waitForSendQueueSpaceAsync()
+        {
+            if (started)
+            {
+                if (this.boundedMode)
+                {
+                    await channelMan.getPackagesToSendChannel().Writer.WaitToWriteAsync();
+                }
+
+            }
+            else
+            {
+                throw new serverNotStartedException();
+            }
+
+        }
+
+        public void startOSCServer(ushort receivePort, string receiveIP, ushort sendPort, string sendIP, bool unboundedQueueMode=true, int boundedQueueSize=50000,OSCQueueDropMode dropMode=OSCQueueDropMode.dropNewest)
         {
             if (!this.started)
             {
+                this.receivePort = receivePort;
+                this.sendPort = sendPort;
+                this.sendIP = sendIP;
+                this.receiveIP = receiveIP;
+                shutdownTrigger = new CancellationTokenSource();
+                this.boundedMode = !unboundedQueueMode;
+                this.channelCapacity = boundedQueueSize;
                 if (this.channelMan != null)
                 {
                     this.channelMan.shutDown();
                 }
-                this.channelMan = new channelManager();
 
-                if (this.decodeEncodeServer != null)
-                {
-                    this.decodeEncodeServer.shutdown();
-                }
-                this.decodeEncodeServer = new decodeEncodeServer(this.channelMan);
-                if (this.OSCReceiveServer != null)
-                {
-                    this.OSCReceiveServer.shutdownServer();
-                }
-                this.OSCReceiveServer = new OSCReceiveServer(this.channelMan, this.receiveIP, this.receivePort);
-                if (this.OSCSendServer != null)
-                {
-                    this.OSCSendServer.shutdownServer();
-                }
-                this.OSCSendServer = new OSCSendServer(this.channelMan, this.sendIP, this.sendPort);
+                this.channelMan = new ChannelManager(unboundedQueueMode,boundedQueueSize,dropMode);
 
-                this.OSCSendServer.start();
-                this.OSCReceiveServer.start();
-                this.decodeEncodeServer.start().Wait();
+                if (this.decoderEncoder != null)
+                {
+                    this.decoderEncoder.shutdown();
+                }
+                this.decoderEncoder = new DecodeEncodeServer(this.channelMan);
+                if (this.OSCReceiver != null)
+                {
+                    this.OSCReceiver.shutdownServer();
+                }
+                this.OSCReceiver = new OSCReceiveServer(this.channelMan, this.receiveIP, this.receivePort);
+                if (this.OSCSender != null)
+                {
+                    this.OSCSender.shutdownServer();
+                }
+                this.OSCSender = new OSCSendServer(this.channelMan, this.sendIP, this.sendPort);
+
+                this.decoderEncoder.start().Wait();
+                this.OSCSender.start();
+                this.OSCReceiver.start();
+                
+
+
+
                 this.started = true;
             }
             else
@@ -144,33 +282,30 @@ namespace CactusOSC
         {
             if (this.started)
             {
+                shutdownTrigger.Cancel();
+
+                if (this.decoderEncoder != null)
+                {
+                    this.decoderEncoder.shutdown();
+                }
+                this.decoderEncoder = null;
+                if (this.OSCReceiver != null)
+                {
+                    this.OSCReceiver.shutdownServer();
+                }
+                this.OSCReceiver = null;
+                if (this.OSCSender != null)
+                {
+                    this.OSCSender.shutdownServer();
+                }
+                this.OSCSender = null;
                 if (this.channelMan != null)
                 {
                     this.channelMan.shutDown();
                 }
                 this.channelMan = null;
 
-                if (this.decodeEncodeServer != null)
-                {
-                    this.decodeEncodeServer.shutdown();
-                }
-                this.decodeEncodeServer = null;
-                if (this.OSCReceiveServer != null)
-                {
-                    this.OSCReceiveServer.shutdownServer();
-                }
-                this.OSCReceiveServer = null;
-                if (this.OSCSendServer != null)
-                {
-                    this.OSCSendServer.shutdownServer();
-                }
-                this.OSCSendServer = null;
-                if (this.channelMan != null)
-                {
-                    this.channelMan.shutDown();
-                }
-                this.channelMan = null;
-
+                this.Dispose();
                 this.started = false;
 
             }

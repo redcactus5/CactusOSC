@@ -12,28 +12,91 @@ using System.Threading.Channels;
 
 namespace CactusOSC
 {
-    internal class channelManager
+    public enum OSCQueueDropMode
+    {
+        dropOldest,
+        dropNewest,
+        wait,
+        dropWrite
+    }
+    internal class ChannelManager
     {
         private Channel<byte[]> PackagesToSend;
         private Channel<byte[]> receivedPackages;
+        private Channel<OSCPackage> packagesToEncode;
+        private Channel<OSCPackage> decodedPackages;
+        
+        public ChannelManager(bool unboundedMode, int boundedQueueSize,OSCQueueDropMode dropMode)
+        {
+            if (unboundedMode)
+            {
+                PackagesToSend = Channel.CreateUnbounded<byte[]>();
+                receivedPackages = Channel.CreateUnbounded<byte[]>();
+                packagesToEncode = Channel.CreateUnbounded<OSCPackage>();
+                decodedPackages=Channel.CreateUnbounded<OSCPackage>();
+            }
+            else
+            {
+                BoundedChannelOptions tempOptions;
+                switch (dropMode)
+                {
+                    case(OSCQueueDropMode.dropOldest):
+                        tempOptions= new BoundedChannelOptions(boundedQueueSize)
+                        {
+                            FullMode = BoundedChannelFullMode.DropOldest,
+                            SingleReader = true,
+                            SingleWriter = false
+                        };
+                        break;
+                    case (OSCQueueDropMode.dropNewest):
+                        tempOptions = new BoundedChannelOptions(boundedQueueSize)
+                        {
+                            FullMode = BoundedChannelFullMode.DropNewest,
+                            SingleReader = true,
+                            SingleWriter = false
+                        };
+                        break;
+                    case (OSCQueueDropMode.wait):
+                    
+                        tempOptions = new BoundedChannelOptions(boundedQueueSize)
+                        {
+                            FullMode = BoundedChannelFullMode.Wait,
+                            SingleReader = true,
+                            SingleWriter = false
+                        };
+                        break;
+                    case (OSCQueueDropMode.dropWrite):
 
-        
-        public channelManager()
-        {
-            PackagesToSend = Channel.CreateUnbounded<byte[]>();
-            receivedPackages = Channel.CreateUnbounded<byte[]>();
-        }
-        
-        public void transferPackageToSend(byte[] package)
-        {
-            ChannelWriter<byte[]> writer = PackagesToSend.Writer;
-            writer.WriteAsync(package).AsTask().Wait();
+                        tempOptions = new BoundedChannelOptions(boundedQueueSize)
+                        {
+                            FullMode = BoundedChannelFullMode.DropWrite,
+                            SingleReader = true,
+                            SingleWriter = false
+                        };
+                        break;
+                    default:
+                        throw new InvalidOSCDropPolicyException();
+                }
+                
+                
+                PackagesToSend = Channel.CreateBounded<byte[]>(tempOptions);
+                receivedPackages = Channel.CreateBounded<byte[]>(tempOptions);
+                packagesToEncode = Channel.CreateBounded<OSCPackage>(tempOptions);
+                decodedPackages = Channel.CreateBounded<OSCPackage>(tempOptions);
+            }
             
         }
-        public void transferReceivedPackage(byte[] package)
+        
+        public async Task transferPackageToSend(byte[] package)
+        {
+            ChannelWriter<byte[]> writer = PackagesToSend.Writer;
+            await writer.WriteAsync(package);
+            
+        }
+        public async Task transferReceivedPackage(byte[] package)
         {
             ChannelWriter<byte[]> writer = receivedPackages.Writer;
-            writer.WriteAsync(package).AsTask().Wait();
+            await writer.WriteAsync(package);
         }
 
         public Channel<byte[]> getReceivedPackagesChannel()
@@ -45,9 +108,25 @@ namespace CactusOSC
         {
             return this.PackagesToSend;
         }
+
+        public Channel<OSCPackage> getDecodedPackagesChannel()
+        {
+            return this.decodedPackages;
+        }
+
+
+        public Channel<OSCPackage> getPackagesToEncodeChannel()
+        {
+            return this.packagesToEncode;
+        }
+
         public void shutDown(){
             PackagesToSend.Writer.Complete();
             receivedPackages.Writer.Complete();
+            decodedPackages.Writer.Complete();
+            packagesToEncode.Writer.Complete();
         }
+
+        
     }
 }

@@ -15,7 +15,7 @@ using System.Threading.Channels;
 namespace CactusOSC
 {
 
-    internal class OSCReceiveServer
+    internal class OSCReceiveServer:IDisposable
     {
         UdpClient receiveServer;
         private string address;
@@ -23,9 +23,9 @@ namespace CactusOSC
         private Channel<byte[]> messagePool;
         private CancellationTokenSource shutdownTrigger;
         private Task receiveTask;
-        private channelManager converterBridge;
+        private ChannelManager converterBridge;
 
-        public OSCReceiveServer(channelManager converterBridge, string address, UInt16 port)
+        public OSCReceiveServer(ChannelManager converterBridge, string address, UInt16 port)
         {
             this.address = address;
             this.port = port;
@@ -62,11 +62,11 @@ namespace CactusOSC
                 
                 try
                 {
-                    UdpReceiveResult message = await receiveServer.ReceiveAsync();
+                    UdpReceiveResult message = await receiveServer.ReceiveAsync(this.shutdownTrigger.Token);
                     
 
 
-                    writer.WriteAsync(message.Buffer).AsTask().Wait();
+                    await writer.WriteAsync(message.Buffer);
                 }
                 catch (ObjectDisposedException)
                 {
@@ -85,12 +85,27 @@ namespace CactusOSC
         {
             if (receiveServer == null)
             {
-                throw new InvalidOperationException("server not started");
+                throw new serverNotStartedException();
             }
             this.shutdownTrigger.Cancel();
+            this.receiveTask.GetAwaiter().GetResult();
+            this.receiveTask = null;
             this.receiveServer.Close();
+            this.Dispose();
         }
 
-        
+        public void Dispose()
+        {
+            ;
+            if (this.shutdownTrigger != null)
+            {
+                this.shutdownTrigger.Dispose();
+            }
+            if(this.receiveServer!= null)
+            {
+                this.receiveServer.Dispose();
+            }
+            
+        }
     }
 }

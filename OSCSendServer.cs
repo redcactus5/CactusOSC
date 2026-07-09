@@ -14,7 +14,7 @@ using System.Threading.Channels;
 
 namespace CactusOSC
 {
-    internal class OSCSendServer
+    internal class OSCSendServer:IDisposable
     {
         UdpClient sendServer;
         private string address;
@@ -22,16 +22,18 @@ namespace CactusOSC
         private Channel<byte[]> messageQueue;
         private CancellationTokenSource shutdownTrigger;
         private Task sendTask;
-        ManualResetEventSlim finishedSend;
-        private channelManager converterBridge;
+        
+        private ChannelManager converterBridge;
+        private TaskCompletionSource<bool> sendFinished;
+    
 
-        public OSCSendServer(channelManager converterBridge, string address, UInt16 port)
+        public OSCSendServer(ChannelManager converterBridge, string address, UInt16 port)
         {
 
             this.address = address;
             this.port = port;
             this.converterBridge = converterBridge;
-            finishedSend = new ManualResetEventSlim(false);
+            
             this.messageQueue=converterBridge.getPackagesToSendChannel();
         }
         public void start()
@@ -42,12 +44,18 @@ namespace CactusOSC
                 sendServer.Close();
             }
             sendServer = new UdpClient(this.address, this.port);
-
+            sendFinished= new(TaskCreationOptions.RunContinuationsAsynchronously);
             sendTask = Task.Run(SendOSC);
         }
         public void waitForSendFinish()
         {
-            this.finishedSend.Wait();
+            sendFinished.Task.GetAwaiter().GetResult();
+            
+        }
+
+        public async Task AsyncWaitForSendFinish()
+        {
+            await sendFinished.Task.WaitAsync(shutdownTrigger.Token);
         }
         private async Task SendOSC()
         {
@@ -66,10 +74,10 @@ namespace CactusOSC
                         }
 
                     }
-                    this.finishedSend.Set();
+                    sendFinished.TrySetResult(true);
 
                     await messageQueue.Reader.WaitToReadAsync(shutdownTrigger.Token);
-                    this.finishedSend.Reset();
+                    sendFinished = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
                 }
                 catch (ChannelClosedException)
@@ -94,14 +102,37 @@ namespace CactusOSC
         {
             if (sendServer == null)
             {
-                throw new InvalidOperationException("Server not started");
+                throw new serverNotStartedException();
             }
             this.shutdownTrigger.Cancel();
             this.sendServer.Close();
-            this.messageQueue.Writer.Complete();
+            byte[] garbageDisposal;
+            while (messageQueue.Reader.TryRead(out garbageDisposal))
+            {
 
+            }
+
+            this.sendTask.GetAwaiter().GetResult();
+            this.sendTask = null;
+            this.Dispose();
         }
 
+        public void Dispose()
+        {
+            
+            if(this.shutdownTrigger != null)
+            {
+                this.shutdownTrigger.Dispose();
+                this.shutdownTrigger = null;
+            }
+            if(this.sendServer != null)
+            {
+                this.sendServer.Dispose();
+                this.sendServer = null;
+            }
+            
+            
+        }
        
     }
     

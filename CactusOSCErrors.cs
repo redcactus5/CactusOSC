@@ -316,4 +316,22 @@ namespace CactusOSC
 
     }
 
+    class InvalidOSCDropPolicyException : Exception
+    {
+        public InvalidOSCDropPolicyException()
+        {
+        }
+
+        public InvalidOSCDropPolicyException(string message)
+            : base(message)
+        {
+        }
+
+        public InvalidOSCDropPolicyException(string message, Exception innerException)
+            : base(message, innerException)
+        {
+        }
+
+    }
+
 }
