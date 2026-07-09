@@ -334,4 +334,22 @@ namespace CactusOSC
 
     }
 
+    class InvalidBundleElementException : InvalidBundleException
+    {
+        public InvalidBundleElementException()
+        {
+        }
+
+        public InvalidBundleElementException(string message)
+            : base(message)
+        {
+        }
+
+        public InvalidBundleElementException(string message, Exception innerException)
+            : base(message, innerException)
+        {
+        }
+
+    }
+
 }
