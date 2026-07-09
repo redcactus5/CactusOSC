@@ -16,14 +16,14 @@ using System.Threading.Channels;
 
 namespace CactusOSC
 {
-    internal class decodeEncodeServer
+    internal class DecodeEncodeServer:IDisposable
     {
         private Task EncoderServer;
         private Task DecoderServer;
 
         private Channel<OSCPackage> packagesToEncode;
-        private ConcurrentQueue<OSCPackage> decodedPackages;
-        private channelManager serverBridge;
+        private Channel<OSCPackage> decodedPackages;
+        private ChannelManager channelKeeper;
 
         private CancellationTokenSource shutDownTrigger;
 
@@ -36,11 +36,10 @@ namespace CactusOSC
         private SemaphoreSlim inFlightCountGate;
 
 
-        public decodeEncodeServer(channelManager serverBridge)
+        public DecodeEncodeServer(ChannelManager channelKeeper)
         {
             
-            this.packagesToEncode = Channel.CreateUnbounded<OSCPackage>();
-            this.decodedPackages =  new ConcurrentQueue<OSCPackage>();
+            
             
             
             this.compilers = new ConcurrentQueue<OSCPackageCompiler>();
@@ -48,8 +47,10 @@ namespace CactusOSC
             this.interpreter = new OSCPackageInterpreter();
             this.encodeGate = new SemaphoreSlim(1);
             
-            this.serverBridge = serverBridge;
+            this.channelKeeper = channelKeeper;
 
+            this.packagesToEncode = channelKeeper.getPackagesToEncodeChannel();
+            this.decodedPackages =  channelKeeper.getDecodedPackagesChannel();
             this.inFlightCountGate = new SemaphoreSlim(1);
             
             
@@ -69,8 +70,14 @@ namespace CactusOSC
             }
             this.shutDownTrigger = new CancellationTokenSource();
             
-            decodedPackages.Clear();
             
+            
+
+            OSCPackageCompiler garbageDisposal;
+            while (compilers.TryDequeue(out garbageDisposal))
+            {
+                garbageDisposal = null;
+            }
 
             this.EncoderServer = this.encodeService();
             this.DecoderServer = this.DecodingService();
@@ -96,56 +103,84 @@ namespace CactusOSC
                 
             }
             
-            this.inFlightCountGate.Release();
+            
             
             
         }
 
+        public void Dispose()
+        {
+            this.shutdown();
+            if (this.shutDownTrigger != null)
+            {
+                this.shutDownTrigger.Dispose();
+                this.encodeGate.Dispose();
+                this.inFlightCountGate.Dispose();
+                this.encodeFinishedTcs = null;
+            }
+        }
         
 
         public async Task enqueuePackageListEncoding(List<OSCPackage> packageList)
         {
-            await encodeGate.WaitAsync();
-            ChannelWriter<OSCPackage> writer = this.packagesToEncode.Writer;
-            await this.inFlightCountGate.WaitAsync();
-            this.inFlightCount += packageList.Count;
-            if (this.encodeFinishedTcs == null)
+            try
             {
-                this.encodeFinishedTcs=new TaskCompletionSource<bool>();
+                await encodeGate.WaitAsync(this.shutDownTrigger.Token);
+                ChannelWriter<OSCPackage> writer = this.packagesToEncode.Writer;
+                await this.inFlightCountGate.WaitAsync(this.shutDownTrigger.Token);
+                this.inFlightCount += packageList.Count;
+                if (((this.encodeFinishedTcs != null) && (this.encodeFinishedTcs.Task.IsCompleted)) || (this.encodeFinishedTcs == null))
+                {
+                    this.encodeFinishedTcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                }
+                this.inFlightCountGate.Release();
+                for (int i = 0; i < packageList.Count; i++)
+                {
+                    await writer.WriteAsync(packageList[i], this.shutDownTrigger.Token);
+                }
+
+                encodeGate.Release();
             }
-            this.inFlightCountGate.Release();
-            for (int i = 0; i < packageList.Count; i++)
+            catch (OperationCanceledException)
             {
-                await writer.WriteAsync(packageList[i]);
+
             }
             
-            encodeGate.Release();
         }
 
         public async Task enqueuePackageEncoding(OSCPackage package)
         {
-            ChannelWriter<OSCPackage> writer = this.packagesToEncode.Writer;
-            await this.inFlightCountGate.WaitAsync();
-            this.inFlightCount++;
-            if (this.encodeFinishedTcs == null)
+            try
             {
-                this.encodeFinishedTcs = new TaskCompletionSource<bool>();
+                ChannelWriter<OSCPackage> writer = this.packagesToEncode.Writer;
+                await this.inFlightCountGate.WaitAsync(this.shutDownTrigger.Token);
+                this.inFlightCount++;
+                if (((this.encodeFinishedTcs != null) && (this.encodeFinishedTcs.Task.IsCompleted)) || (this.encodeFinishedTcs == null))
+                {
+                    this.encodeFinishedTcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                }
+                this.inFlightCountGate.Release();
+                await writer.WriteAsync(package, this.shutDownTrigger.Token);
             }
-            this.inFlightCountGate.Release();
-             await writer.WriteAsync(package);
+            catch(OperationCanceledException)
+            {
+
+            }
+            
+
         }
 
         
         public bool tryGetDecodedPackage(out OSCPackage package)
         {
-            return this.decodedPackages.TryDequeue(out package);
+            return this.decodedPackages.Reader.TryRead(out package);
         }
         
         public List<OSCPackage> getDecodedPackageList()
         {
-            List<OSCPackage> tempMailbox = new List<OSCPackage>(this.decodedPackages.Count);
+            List<OSCPackage> tempMailbox = new List<OSCPackage>(this.decodedPackages.Reader.Count);
             OSCPackage packageCache;
-            while(this.decodedPackages.TryDequeue(out packageCache))
+            while(this.decodedPackages.Reader.TryRead(out packageCache))
             {
                 tempMailbox.Add(packageCache);
             }
@@ -153,7 +188,7 @@ namespace CactusOSC
 
         }
 
-        public async Task waitForEncodequeueFinish()
+        public async Task waitForEncodeQueueFinish()
         {
             TaskCompletionSource<bool> tcs = this.encodeFinishedTcs;
             if (tcs != null)
@@ -196,7 +231,7 @@ namespace CactusOSC
 
         private async Task DecodingService()
         {
-            ChannelReader<byte[]> reader = this.serverBridge.getReceivedPackagesChannel();
+            ChannelReader<byte[]> reader = this.channelKeeper.getReceivedPackagesChannel();
             byte[][] input=new byte[1024][];
             int inputIndex = 0;
             
@@ -232,7 +267,7 @@ namespace CactusOSC
                         catch (InvalidPackageException e)
                         {
                             finishArray[currentElement] = null;
-                            Console.WriteLine(e);
+                            
 
                         }
 
@@ -242,7 +277,7 @@ namespace CactusOSC
                     {
                         if (finishArray[i] != null)
                         {
-                            this.decodedPackages.Enqueue(finishArray[i]);
+                            await this.decodedPackages.Writer.WriteAsync(finishArray[i], this.shutDownTrigger.Token);
                         }
 
                     }
@@ -252,7 +287,11 @@ namespace CactusOSC
             catch (OperationCanceledException)
             {
             }
-            
+            catch (ObjectDisposedException)
+            {
+
+            }
+
         }
 
 
@@ -270,7 +309,7 @@ namespace CactusOSC
                 while (!this.shutDownTrigger.IsCancellationRequested)
                 {
                     await reader.WaitToReadAsync(shutDownTrigger.Token);
-                    await encodeGate.WaitAsync();
+                    await encodeGate.WaitAsync(this.shutDownTrigger.Token);
                     encodeGate.Release();
                     while (reader.TryRead(out inputCache))
                     {
@@ -290,16 +329,16 @@ namespace CactusOSC
 
                     for (int i = 0; i < inputIndex; i++)
                     {
-                        this.serverBridge.transferPackageToSend(finishArray[i]);
+                        await this.channelKeeper.transferPackageToSend(finishArray[i]);
                     }
-                    await this.inFlightCountGate.WaitAsync();
-                    if (this.encodeFinishedTcs != null)
+                    await this.inFlightCountGate.WaitAsync(this.shutDownTrigger.Token);
+                    if ((this.encodeFinishedTcs != null)&&(!this.encodeFinishedTcs.Task.IsCompleted))
                     {
                         this.inFlightCount -= inputIndex;
                         if (this.inFlightCount == 0)
                         {
                             this.encodeFinishedTcs.SetResult(true);
-                            this.encodeFinishedTcs = null;
+                            
                         }
                     }
                     this.inFlightCountGate.Release();
@@ -310,6 +349,9 @@ namespace CactusOSC
             catch (OperationCanceledException)
             {
             }
+            catch (ObjectDisposedException){
+
+            } 
         }
 
     }

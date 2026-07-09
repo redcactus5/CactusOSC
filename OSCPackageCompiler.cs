@@ -14,7 +14,7 @@ using System.Buffers.Binary;
 
 using System.Text;
 
-//todo:add recursive bundle and array detection
+
 
 namespace CactusOSC
 {
@@ -89,9 +89,7 @@ namespace CactusOSC
 
         private int generateArrayTypeString(OSCArray array,RawOSCPackage target)
         {
-            //need to be modified to detect and throw on recursive arrays
-            
-
+  
 
 
             Stack<OSCArray> arrayStack = new Stack<OSCArray>();
@@ -162,37 +160,37 @@ namespace CactusOSC
             {
                 case OSCValueType.OSCString:
                     return target.writeData(this.typeStrings[0]);
-                    break;
+                   
                 case OSCValueType.OSCInt:
                     return target.writeData(this.typeStrings[1]);
-                    break;
+                  
                 case OSCValueType.OSCFloat:
                     return target.writeData(this.typeStrings[2]);
-                    break;
+                  
                 case OSCValueType.OSCBlob:
                     return target.writeData(this.typeStrings[3]);
-                    break;
+                   
                 case OSCValueType.OSCLong:
                     return target.writeData(this.typeStrings[4]);
-                    break;
+                 
                 case OSCValueType.OSCTimeTag:
                     return target.writeData(this.typeStrings[5]);
-                    break;
+                  
                 case OSCValueType.OSCDouble:
                     return target.writeData(this.typeStrings[6]);
-                    break;
+                   
                 case OSCValueType.OSCNonstandardString:
                     return target.writeData(this.typeStrings[7]);
-                    break;
+                    
                 case OSCValueType.OSCChar:
                     return target.writeData(this.typeStrings[8]);
-                    break;
+                    
                 case OSCValueType.OSCRGBA:
                     return target.writeData(this.typeStrings[9]);
-                    break;
+                    
                 case OSCValueType.OSCMIDI:
                     return target.writeData(this.typeStrings[10]);
-                    break;
+                    
                 case OSCValueType.OSCBool:
                     if (((OSCBool)value).getValue())
                     {
@@ -202,16 +200,16 @@ namespace CactusOSC
                     {
                         return target.writeData(this.typeStrings[12]);
                     }
-                    break;
+                    
                 case OSCValueType.OSCNil:
                     return target.writeData(this.typeStrings[13]);
-                    break;
+                    
                 case OSCValueType.OSCInfinitum:
                     return target.writeData(this.typeStrings[14]);
-                    break;
+                    
                 default:
                         throw new InvalidOSCValueTypeException();
-                    break;
+                    
                     
             }
             
@@ -236,9 +234,9 @@ namespace CactusOSC
                     target.writeData(this.writeCache4);
                     break;
                 case OSCValueType.OSCBlob:
-                    BinaryPrimitives.WriteInt32BigEndian(this.writeCache4, ((OSCBlob)value).getValue().Length);
+                    BinaryPrimitives.WriteInt32BigEndian(this.writeCache4, ((OSCBlob)value).getRawValue().Length);
                     target.writeData(this.writeCache4);
-                    target.writeData(((OSCBlob)value).getValue());
+                    target.writeData(((OSCBlob)value).getRawValue());
                     break;
                 case OSCValueType.OSCLong:
                     BinaryPrimitives.WriteInt64BigEndian(this.writeCache8, ((OSCLong)value).getValue());

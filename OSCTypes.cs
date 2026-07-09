@@ -10,8 +10,7 @@ CactusOSC is distributed in the hope that it will be useful, but WITHOUT ANY WAR
 You should have received a copy of the GNU Lesser General Public License along with CactusOSC. If not, see <https://www.gnu.org/licenses/>. 
 */
 
-using CactusOSC;
-using System.Runtime.CompilerServices;
+
 using System.Text;
 
 namespace CactusOSC
@@ -35,20 +34,20 @@ namespace CactusOSC
         OSCArray
     }
 
-    
+
 
     public abstract class OSCValue
     {
-   
+
         private OSCValueType oscType;
         private int size;
         private bool sizeSet;
         private int typeStringSize;
         private bool typeStringSizeSet;
-        public  abstract override string ToString();
+        public abstract override string ToString();
 
-        public abstract OSCValue clone();
-        
+        public abstract OSCValue Clone();
+
         public OSCValueType getOSCType()
         {
             return this.oscType;
@@ -94,33 +93,35 @@ namespace CactusOSC
         {
             return this.typeStringSize;
         }
-        
+
 
     }
 
-    public sealed class OSCString : OSCValue {
+    public sealed class OSCString : OSCValue
+    {
         private string value;
-        
-        public OSCString(string value):base(OSCValueType.OSCString)
+
+        public OSCString(string value) : base(OSCValueType.OSCString)
         {
             this.value = value;
             //calculate the byte block size
-            int tempsize=Encoding.UTF8.GetByteCount(value)+1;
+            int tempsize = Encoding.UTF8.GetByteCount(value) + 1;
             if (tempsize > 0)
             {
                 int overflow = tempsize % 4;
                 if (overflow != 0)
                 {
-                    tempsize += 4-overflow;
+                    tempsize += 4 - overflow;
                 }
             }
-            else {
+            else
+            {
                 tempsize = 4;
             }
             this.setByteSize(tempsize);
             this.setTypeStringSize(1);
         }
-        
+
         public string getValue()
         {
             return this.value;
@@ -129,7 +130,7 @@ namespace CactusOSC
         {
             return this.value.ToString();
         }
-        public override OSCString clone()
+        public override OSCString Clone()
         {
             return new OSCString(this.value);
         }
@@ -138,14 +139,14 @@ namespace CactusOSC
     public sealed class OSCInt : OSCValue
     {
         private int value;
-        public OSCInt(int value):base(OSCValueType.OSCInt)
+        public OSCInt(int value) : base(OSCValueType.OSCInt)
         {
             this.value = value;
             this.setByteSize(4);
             this.setTypeStringSize(1);
         }
 
-        public  int getValue()
+        public int getValue()
         {
             return this.value;
         }
@@ -153,7 +154,7 @@ namespace CactusOSC
         {
             return this.value.ToString();
         }
-        public override OSCInt clone()
+        public override OSCInt Clone()
         {
             return new OSCInt(this.value);
         }
@@ -163,14 +164,14 @@ namespace CactusOSC
     public sealed class OSCFloat : OSCValue
     {
         private float value;
-        public OSCFloat(float value):base(OSCValueType.OSCFloat)
+        public OSCFloat(float value) : base(OSCValueType.OSCFloat)
         {
             this.value = value;
             this.setByteSize(4);
             this.setTypeStringSize(1);
         }
 
-        public  float getValue()
+        public float getValue()
         {
             return this.value;
         }
@@ -178,7 +179,7 @@ namespace CactusOSC
         {
             return this.value.ToString();
         }
-        public override OSCFloat clone()
+        public override OSCFloat Clone()
         {
             return new OSCFloat(this.value);
         }
@@ -188,11 +189,12 @@ namespace CactusOSC
 
     public sealed class OSCBlob : OSCValue
     {
-        
+
         private byte[] value;
-        public OSCBlob(byte[] value):base(OSCValueType.OSCBlob) {
-        
-            this.value = value;
+        public OSCBlob(byte[] value) : base(OSCValueType.OSCBlob)
+        {
+
+            this.value = (byte[])value.Clone();
             //calculate the byte block size
             int tempsize = this.value.Length;
             if (tempsize > 0)
@@ -200,27 +202,32 @@ namespace CactusOSC
                 int overflow = tempsize % 4;
                 if (overflow != 0)
                 {
-                    tempsize += 4- overflow;
-                    
+                    tempsize += 4 - overflow;
+
                 }
-                    
-                
+
+
             }
-            
-            this.setByteSize(tempsize+4);
+
+            this.setByteSize(tempsize + 4);
             this.setTypeStringSize(1);
 
         }
-        
+
         public byte[] getValue()
         {
             return (byte[])this.value.Clone();
+        }
+
+        internal byte[] getRawValue()
+        {
+            return this.value;
         }
         public override string ToString()
         {
             return Convert.ToHexString(this.value);
         }
-        public override OSCBlob clone()
+        public override OSCBlob Clone()
         {
             return new OSCBlob((byte[])this.value.Clone());
         }
@@ -231,7 +238,7 @@ namespace CactusOSC
     public sealed class OSCLong : OSCValue
     {
         private long value;
-        public  OSCLong(long value):base(OSCValueType.OSCLong)
+        public OSCLong(long value) : base(OSCValueType.OSCLong)
         {
             this.value = value;
             this.setByteSize(8);
@@ -247,7 +254,7 @@ namespace CactusOSC
             return this.value.ToString();
         }
 
-        public override OSCLong clone()
+        public override OSCLong Clone()
         {
             return new OSCLong(this.value);
         }
@@ -257,7 +264,7 @@ namespace CactusOSC
     public sealed class OSCTimeTag : OSCValue
     {
         private long value;
-        public OSCTimeTag(long value):base(OSCValueType.OSCTimeTag)
+        public OSCTimeTag(long value) : base(OSCValueType.OSCTimeTag)
         {
             this.value = value;
             this.setByteSize(8);
@@ -271,7 +278,7 @@ namespace CactusOSC
         {
             return this.value.ToString();
         }
-        public override OSCTimeTag clone()
+        public override OSCTimeTag Clone()
         {
             return new OSCTimeTag(this.value);
         }
@@ -280,7 +287,7 @@ namespace CactusOSC
     public sealed class OSCDouble : OSCValue
     {
         private double value;
-        public OSCDouble(double value):base(OSCValueType.OSCDouble)
+        public OSCDouble(double value) : base(OSCValueType.OSCDouble)
         {
             this.value = value;
             this.setByteSize(8);
@@ -294,7 +301,7 @@ namespace CactusOSC
         {
             return this.value.ToString();
         }
-        public override OSCDouble clone()
+        public override OSCDouble Clone()
         {
             return new OSCDouble(this.value);
         }
@@ -305,7 +312,7 @@ namespace CactusOSC
     public sealed class OSCNonstandardString : OSCValue
     {
         private string value;
-        public OSCNonstandardString(string value):base(OSCValueType.OSCNonstandardString)
+        public OSCNonstandardString(string value) : base(OSCValueType.OSCNonstandardString)
         {
             this.value = value;
             //calculate the byte block size
@@ -336,7 +343,7 @@ namespace CactusOSC
         {
             return this.value.ToString();
         }
-        public override OSCNonstandardString clone()
+        public override OSCNonstandardString Clone()
         {
             return new OSCNonstandardString(this.value);
         }
@@ -348,7 +355,7 @@ namespace CactusOSC
     public sealed class OSCChar : OSCValue
     {
         private char value;
-        public OSCChar(char value):base(OSCValueType.OSCChar)
+        public OSCChar(char value) : base(OSCValueType.OSCChar)
         {
             this.value = value;
             this.setByteSize(4);
@@ -362,7 +369,7 @@ namespace CactusOSC
         {
             return this.value.ToString();
         }
-        public override OSCChar clone()
+        public override OSCChar Clone()
         {
             return new OSCChar(this.value);
         }
@@ -376,7 +383,7 @@ namespace CactusOSC
         private byte b;
         private byte a;
 
-        public OSCColor(byte r, byte g, byte b, byte a):base(OSCValueType.OSCRGBA)
+        public OSCColor(byte r, byte g, byte b, byte a) : base(OSCValueType.OSCRGBA)
         {
             this.r = r;
             this.g = g;
@@ -386,9 +393,9 @@ namespace CactusOSC
             this.setTypeStringSize(1);
 
         }
-        public OSCColor(int rgba):base(OSCValueType.OSCRGBA)
+        public OSCColor(int rgba) : base(OSCValueType.OSCRGBA)
         {
-            this.r = (byte)((rgba>>24) & 0xff);
+            this.r = (byte)((rgba >> 24) & 0xff);
             this.g = (byte)((rgba >> 16) & 0xff);
             this.b = (byte)((rgba >> 8) & 0xff);
             this.a = (byte)(rgba & 0xff);
@@ -402,11 +409,11 @@ namespace CactusOSC
         }
         public override string ToString()
         {
-            return "#"+Convert.ToHexString(new byte[] { this.r, this.g, this.b, this.a });
+            return "#" + Convert.ToHexString(new byte[] { this.r, this.g, this.b, this.a });
         }
-        public override OSCColor clone()
+        public override OSCColor Clone()
         {
-            return new OSCColor(this.r,this.g,this.b,this.a);
+            return new OSCColor(this.r, this.g, this.b, this.a);
         }
     }
 
@@ -418,7 +425,7 @@ namespace CactusOSC
         private byte data1;
         private byte data2;
 
-        public OSCMIDI(byte port, byte status, byte data1, byte data2):base(OSCValueType.OSCMIDI)
+        public OSCMIDI(byte port, byte status, byte data1, byte data2) : base(OSCValueType.OSCMIDI)
         {
             this.port = port;
             this.status = status;
@@ -427,7 +434,7 @@ namespace CactusOSC
             this.setByteSize(4);
             this.setTypeStringSize(1);
         }
-        public OSCMIDI(int midiMessage):base(OSCValueType.OSCMIDI)
+        public OSCMIDI(int midiMessage) : base(OSCValueType.OSCMIDI)
         {
             this.port = (byte)((midiMessage >> 24) & 0xff);
             this.status = (byte)((midiMessage >> 16) & 0xff);
@@ -438,13 +445,13 @@ namespace CactusOSC
         }
         public int getValue()
         {
-            return (((this.port << 24)&(0xff<<24)) | ((this.status << 16) & (0xff << 16)) | ((this.data1 << 8) & (0xff << 8)) | ((this.data2)&0xff)); ;
+            return (((this.port << 24) & (0xff << 24)) | ((this.status << 16) & (0xff << 16)) | ((this.data1 << 8) & (0xff << 8)) | ((this.data2) & 0xff)); ;
         }
         public override string ToString()
         {
             return "#" + Convert.ToHexString(new byte[] { this.port, this.status, this.data1, this.data2 });
         }
-        public override OSCMIDI clone()
+        public override OSCMIDI Clone()
         {
             return new OSCMIDI(this.port, this.status, this.data1, this.data2);
         }
@@ -454,8 +461,9 @@ namespace CactusOSC
     public sealed class OSCBool : OSCValue
     {
         private bool value;
-        public OSCBool(bool value):base(OSCValueType.OSCBool) {
-        
+        public OSCBool(bool value) : base(OSCValueType.OSCBool)
+        {
+
             this.value = value;
             this.setByteSize(0);
             this.setTypeStringSize(1);
@@ -468,7 +476,7 @@ namespace CactusOSC
         {
             return this.value.ToString();
         }
-        public override OSCBool clone()
+        public override OSCBool Clone()
         {
             return new OSCBool(this.value);
         }
@@ -476,18 +484,18 @@ namespace CactusOSC
 
     public sealed class OSCNil : OSCValue
     {
-        public OSCNil():base(OSCValueType.OSCNil)
+        public OSCNil() : base(OSCValueType.OSCNil)
         {
             this.setByteSize(0);
         }
-        
+
 
         public override string ToString()
         {
             return "nil";
         }
 
-        public override OSCNil clone()
+        public override OSCNil Clone()
         {
             return new OSCNil();
         }
@@ -497,19 +505,19 @@ namespace CactusOSC
 
     public sealed class OSCInfinitum : OSCValue
     {
-        public OSCInfinitum():base(OSCValueType.OSCInfinitum)
+        public OSCInfinitum() : base(OSCValueType.OSCInfinitum)
         {
             this.setByteSize(0);
             this.setTypeStringSize(1);
         }
-        
+
 
         public override string ToString()
         {
             return "infinitum";
         }
 
-        public override OSCInfinitum clone()
+        public override OSCInfinitum Clone()
         {
             return new OSCInfinitum();
         }
@@ -521,18 +529,18 @@ namespace CactusOSC
     {
         private OSCValue[] data;
 
-        public OSCArray(OSCValue[] data):base(OSCValueType.OSCArray)
+        public OSCArray(OSCValue[] data) : base(OSCValueType.OSCArray)
         {
             this.data = (OSCValue[])data.Clone();
             int tempsize = 0;
             int tempTypeStringSize = 0;
-            for (int index = 0; index < data.Length; index++) 
+            for (int index = 0; index < data.Length; index++)
             {
                 tempsize += data[index].getByteSize();
                 tempTypeStringSize += data[index].getTypeStringSize();
             }
             this.setByteSize(tempsize);
-            this.setTypeStringSize(2+tempTypeStringSize);
+            this.setTypeStringSize(2 + tempTypeStringSize);
         }
 
         public OSCValue[] getValue()
@@ -582,16 +590,16 @@ namespace CactusOSC
                     }
                     else
                     {
-                        copyArray[currentIndex] = currentTemplate[currentIndex].clone();
+                        copyArray[currentIndex] = currentTemplate[currentIndex].Clone();
                         currentIndex++;
                     }
                 }
             }
             return copyArray;
-            
+
         }
 
-        internal  OSCValue[] getRawValue()
+        internal OSCValue[] getRawValue()
         {
             return this.data;
         }
@@ -603,7 +611,7 @@ namespace CactusOSC
             stringEdition.Append("[");
 
             OSCValue[] currentArray = this.data;
-            Stack <OSCValue[] > subListStack = new Stack<OSCValue[]>();
+            Stack<OSCValue[]> subListStack = new Stack<OSCValue[]>();
 
             int currentIndex = 0;
             Stack<int> indexStack = new Stack<int>();
@@ -616,7 +624,7 @@ namespace CactusOSC
                 {
                     stringEdition.Append("]");
                     currentArray = subListStack.Pop();
-                    currentIndex = indexStack.Pop()+1;
+                    currentIndex = indexStack.Pop() + 1;
                     depth--;
                 }
                 else
@@ -643,11 +651,11 @@ namespace CactusOSC
                             }
                             currentIndex++;
                         }
-                            
-                        
+
+
                     }
                 }
-                
+
             }
 
 
@@ -655,7 +663,7 @@ namespace CactusOSC
         }
 
 
-        public override OSCArray clone()
+        public override OSCArray Clone()
         {
             return new OSCArray(this.getValue());
         }
@@ -668,7 +676,7 @@ namespace CactusOSC
         OSCBundle
     }
 
-    
+
     public abstract class OSCPackage
     {
         private OSCPackageType type;
@@ -685,8 +693,8 @@ namespace CactusOSC
             this.type = type;
         }
 
-        
-        
+
+
 
         protected int calculateOSCStringSize(int textLength)
         {
@@ -728,25 +736,25 @@ namespace CactusOSC
             }
         }
     }
-    public sealed class OSCMessage: OSCPackage
+    public sealed class OSCMessage : OSCPackage
     {
         private string address;
         private OSCValue[] values;
-        
 
-        
-        
-        public OSCMessage(string address, OSCValue[] values):base(OSCPackageType.OSCMessage)
+
+
+
+        public OSCMessage(string address, OSCValue[] values) : base(OSCPackageType.OSCMessage)
         {
-            
+
             this.address = address;
-            this.values= values;
-            int adressSize=this.calculateOSCStringSize(Encoding.UTF8.GetByteCount(address)+1);
+            this.values = values;
+            int adressSize = this.calculateOSCStringSize(Encoding.UTF8.GetByteCount(address) + 1);
             //account for the comma that denotes its start and the null terminator
             int typeStringSize = 2;
             //calculate the data size and typestring size
             int dataSize = 0;
-            for(int index=0; index<this.values.Length; index++)
+            for (int index = 0; index < this.values.Length; index++)
             {
                 dataSize += values[index].getByteSize();
                 typeStringSize += values[index].getTypeStringSize();
@@ -754,29 +762,29 @@ namespace CactusOSC
             //calculate the final size
 
             typeStringSize = this.calculateOSCStringSize(typeStringSize);
-            this.setSize(adressSize+typeStringSize+dataSize);
-            
+            this.setSize(adressSize + typeStringSize + dataSize);
+
         }
-        public OSCMessage(string address): base(OSCPackageType.OSCMessage)
+        public OSCMessage(string address) : base(OSCPackageType.OSCMessage)
         {
-            this.address= address;
+            this.address = address;
             this.values = Array.Empty<OSCValue>();
             //account for the type string
-            this.setSize(this.calculateOSCStringSize(Encoding.UTF8.GetByteCount(address) + 1) +calculateOSCStringSize(2));
+            this.setSize(this.calculateOSCStringSize(Encoding.UTF8.GetByteCount(address) + 1) + calculateOSCStringSize(2));
         }
         public string getAddress()
         {
             return this.address;
         }
-        
+
         public OSCValue[] getValues()
         {
-            OSCValue[] clone = new OSCValue[this.values.Length];
-            for (int index = 0; index < clone.Length; index++) 
+            OSCValue[] Clone = new OSCValue[this.values.Length];
+            for (int index = 0; index < Clone.Length; index++)
             {
-                clone[index] = this.values[index].clone();
+                Clone[index] = this.values[index].Clone();
             }
-            return clone;
+            return Clone;
         }
         internal OSCValue[] getRawValues()
         {
@@ -785,9 +793,9 @@ namespace CactusOSC
 
         public OSCValue GetValue(int index)
         {
-            if ((index < this.values.Length)&&(index>=0))
+            if ((index < this.values.Length) && (index >= 0))
             {
-                return this.values[index].clone();
+                return this.values[index].Clone();
             }
             else
             {
@@ -808,272 +816,273 @@ namespace CactusOSC
             return stringedVersion.ToString();
         }
 
-        public OSCMessage clone()
+        public OSCMessage Clone()
         {
-            OSCValue[] valueListCopy= new OSCValue[this.values.Length];
-            for(int index = 0; index<this.values.Length; index++)
+            OSCValue[] valueListCopy = new OSCValue[this.values.Length];
+            for (int index = 0; index < this.values.Length; index++)
             {
-                valueListCopy[index]= this.values[index].clone();
+                valueListCopy[index] = this.values[index].Clone();
             }
 
             return new OSCMessage(this.address, valueListCopy);
         }
     }
-}
 
 
-public sealed class OSCBundle : OSCPackage
-{
-    private OSCBundleElement[] elements;
-    private long timeTag;
-    private const int identSize = 8;
-    private const int timeTagSize = 8;
 
-
-    public override string ToString()
+    public sealed class OSCBundle : OSCPackage
     {
-        StringBuilder sb = new StringBuilder();
+        private OSCBundleElement[] elements;
+        private long timeTag;
+        private const int identSize = 8;
+        private const int timeTagSize = 8;
 
-        Stack<int> subIndexes = new Stack<int>();
-        int index=0;
-        Stack<OSCBundle> childBundles= new Stack<OSCBundle>();
-        OSCBundle currentSubBundle=this;
-        HashSet<OSCPackage> packages= new HashSet<OSCPackage>();
-        packages.Add(this);
-        int depth = 0;
 
-        sb.Append("Bundle(");
-        uint seconds = (uint)(timeTag >> 32);
-        uint fraction = (uint)(timeTag & 0xffffffff);
-        sb.Append(seconds);
-        sb.Append(':');
-        sb.Append(fraction);
-        sb.Append("):");
-        sb.Append("\n");
-
-        while ((index < currentSubBundle.elements.Length) || (depth > 0))
+        public override string ToString()
         {
-            
-            if ((index >= currentSubBundle.getRawElements().Length)&&(depth > 0))
+            StringBuilder sb = new StringBuilder();
+
+            Stack<int> subIndexes = new Stack<int>();
+            int index = 0;
+            Stack<OSCBundle> childBundles = new Stack<OSCBundle>();
+            OSCBundle currentSubBundle = this;
+            HashSet<OSCPackage> packages = new HashSet<OSCPackage>();
+            packages.Add(this);
+            int depth = 0;
+
+            sb.Append("Bundle(");
+            uint seconds = (uint)(timeTag >> 32);
+            uint fraction = (uint)(timeTag & 0xffffffff);
+            sb.Append(seconds);
+            sb.Append(':');
+            sb.Append(fraction);
+            sb.Append("):");
+            sb.Append("\n");
+
+            while ((index < currentSubBundle.elements.Length) || (depth > 0))
             {
-                depth--;
-                index=subIndexes.Pop()+1;
-                currentSubBundle=childBundles.Pop();
-            }
-            else
-            {
-                if (currentSubBundle.elements[index].getRawContents().getPackageType() == OSCPackageType.OSCMessage)
+
+                if ((index >= currentSubBundle.getRawElements().Length) && (depth > 0))
                 {
-                    for (int i = 0; i < depth + 1; i++)
-                    {
-                        sb.Append("    ");
-                    }
-                    sb.Append(((OSCMessage)currentSubBundle.elements[index].getRawContents()).ToString());
-                    sb.Append('\n');
-                    index++;
+                    depth--;
+                    index = subIndexes.Pop() + 1;
+                    currentSubBundle = childBundles.Pop();
                 }
                 else
                 {
-                    if (packages.Contains((OSCBundle)currentSubBundle.elements[index].getRawContents()))
+                    if (currentSubBundle.elements[index].getRawContents().getPackageType() == OSCPackageType.OSCMessage)
                     {
-                        for (int i = 0; i < depth; i++)
+                        for (int i = 0; i < depth + 1; i++)
                         {
                             sb.Append("    ");
-                            
                         }
-                        sb.Append("<recursive bundle reference>");
+                        sb.Append(((OSCMessage)currentSubBundle.elements[index].getRawContents()).ToString());
                         sb.Append('\n');
+                        index++;
                     }
                     else
                     {
-                        depth++;
-                        subIndexes.Push(index);
-                        index = 0;
-
-                        childBundles.Push(currentSubBundle);
-
-
-                        currentSubBundle = ((OSCBundle)currentSubBundle.elements[index].getRawContents());
-                        packages.Add(currentSubBundle);
-                        for (int i = 0; i < depth; i++)
+                        if (packages.Contains((OSCBundle)currentSubBundle.elements[index].getRawContents()))
                         {
-                            sb.Append("    ");
+                            for (int i = 0; i < depth; i++)
+                            {
+                                sb.Append("    ");
+
+                            }
+                            sb.Append("<recursive bundle reference>");
+                            sb.Append('\n');
                         }
-                        sb.Append("Bundle(");
-                        seconds = (uint)(currentSubBundle.timeTag >> 32);
-                        fraction = (uint)(currentSubBundle.timeTag & 0xffffffff);
-                        sb.Append(seconds);
-                        sb.Append(':');
-                        sb.Append(fraction);
-                        sb.Append("):");
-                        sb.Append("\n");
-                    }
-                    
+                        else
+                        {
+                            depth++;
+                            subIndexes.Push(index);
+                            index = 0;
 
+                            childBundles.Push(currentSubBundle);
+
+
+                            currentSubBundle = ((OSCBundle)currentSubBundle.elements[index].getRawContents());
+                            packages.Add(currentSubBundle);
+                            for (int i = 0; i < depth; i++)
+                            {
+                                sb.Append("    ");
+                            }
+                            sb.Append("Bundle(");
+                            seconds = (uint)(currentSubBundle.timeTag >> 32);
+                            fraction = (uint)(currentSubBundle.timeTag & 0xffffffff);
+                            sb.Append(seconds);
+                            sb.Append(':');
+                            sb.Append(fraction);
+                            sb.Append("):");
+                            sb.Append("\n");
+                        }
+
+
+                    }
                 }
+
             }
-            
-        }
-        return sb.ToString();
-    }
-    
-    private int getElementsSize()
-    {
-        int tempSize = 0;
-        
-        for(int elementIndex =0; elementIndex < this.elements.Length; elementIndex++)
-        {
-            tempSize += this.elements[elementIndex].getSize();
-            
+            return sb.ToString();
         }
 
-        
-        
-        return tempSize;
-    }
-    public OSCBundle(OSCBundleElement[] elements,long timeTag):base(OSCPackageType.OSCBundle) 
-    {
-        this.elements=elements;
-        this.timeTag=timeTag;
-        this.setSize(this.getElementsSize()+identSize+timeTagSize);
-    }
-    public OSCBundle(OSCBundleElement[] elements) : base(OSCPackageType.OSCBundle)
-    {
-        this.elements = elements;
-        this.timeTag = 1;
-        this.setSize(this.getElementsSize() + identSize+timeTagSize);
-    }
-
-    public OSCBundleElement[] getElements()
-    {
-
-        //TODO: NEED TO UPDATE TO MAKE RECURSION SAFE
-
-        Stack<OSCBundleElement[]> templateArrayStack = new Stack<OSCBundleElement[]>();
-        OSCBundleElement[] currentTemplate = this.elements;
-
-        Stack<OSCBundleElement[]> copyStack = new Stack<OSCBundleElement[]>();
-        OSCBundleElement[] copyArray = new OSCBundleElement[currentTemplate.Length];
-
-        HashSet<OSCBundle> seenBundles = new HashSet<OSCBundle>();
-        seenBundles.Add(this);
-
-        Stack<int> IndexStack = new Stack<int>();
-        int currentIndex = 0;
-
-        int depth = 0;
-
-        OSCBundleElement tempArray;
-        while ((currentIndex < currentTemplate.Length) || (depth > 0))
+        private int getElementsSize()
         {
-            if (currentIndex >= currentTemplate.Length)
+            int tempSize = 0;
+
+            for (int elementIndex = 0; elementIndex < this.elements.Length; elementIndex++)
             {
-                tempArray = new OSCBundleElement(new OSCBundle(copyArray));
-                currentIndex = IndexStack.Pop();
-                currentTemplate = templateArrayStack.Pop();
-                copyArray = copyStack.Pop();
-                copyArray[currentIndex] = tempArray;
-                currentIndex++;
-                depth--;
+                tempSize += this.elements[elementIndex].getSize();
+
             }
-            else
+
+
+
+            return tempSize;
+        }
+        public OSCBundle(OSCBundleElement[] elements, long timeTag) : base(OSCPackageType.OSCBundle)
+        {
+            this.elements = elements;
+            this.timeTag = timeTag;
+            this.setSize(this.getElementsSize() + identSize + timeTagSize);
+        }
+        public OSCBundle(OSCBundleElement[] elements) : base(OSCPackageType.OSCBundle)
+        {
+            this.elements = elements;
+            this.timeTag = 1;
+            this.setSize(this.getElementsSize() + identSize + timeTagSize);
+        }
+
+        public OSCBundleElement[] getElements()
+        {
+
+            
+
+            Stack<OSCBundleElement[]> templateArrayStack = new Stack<OSCBundleElement[]>();
+            OSCBundleElement[] currentTemplate = this.elements;
+
+            Stack<OSCBundleElement[]> copyStack = new Stack<OSCBundleElement[]>();
+            OSCBundleElement[] copyArray = new OSCBundleElement[currentTemplate.Length];
+
+            HashSet<OSCBundle> seenBundles = new HashSet<OSCBundle>();
+            seenBundles.Add(this);
+
+            Stack<int> IndexStack = new Stack<int>();
+            int currentIndex = 0;
+
+            int depth = 0;
+
+            OSCBundleElement tempArray;
+            while ((currentIndex < currentTemplate.Length) || (depth > 0))
             {
-                if (currentTemplate[currentIndex].getRawContents().getPackageType() == OSCPackageType.OSCBundle)
+                if (currentIndex >= currentTemplate.Length)
                 {
-                    if (seenBundles.Contains((OSCBundle)currentTemplate[currentIndex].getRawContents()))
-                    {
-                        throw new RecursiveBundleException();
-                    }
-                    seenBundles.Add((OSCBundle)currentTemplate[currentIndex].getRawContents());
-                    templateArrayStack.Push(currentTemplate);
-                    copyStack.Push(copyArray);
-                    currentTemplate = ((OSCBundle)currentTemplate[currentIndex].getRawContents()).getRawElements();
-                    IndexStack.Push(currentIndex);
-                    currentIndex = 0;
-                    depth++;
+                    tempArray = new OSCBundleElement(new OSCBundle(copyArray));
+                    currentIndex = IndexStack.Pop();
+                    currentTemplate = templateArrayStack.Pop();
+                    copyArray = copyStack.Pop();
+                    copyArray[currentIndex] = tempArray;
+                    currentIndex++;
+                    depth--;
                 }
                 else
                 {
-                    copyArray[currentIndex] = currentTemplate[currentIndex].clone();
-                    currentIndex++;
+                    if (currentTemplate[currentIndex].getRawContents().getPackageType() == OSCPackageType.OSCBundle)
+                    {
+                        if (seenBundles.Contains((OSCBundle)currentTemplate[currentIndex].getRawContents()))
+                        {
+                            throw new RecursiveBundleException();
+                        }
+                        seenBundles.Add((OSCBundle)currentTemplate[currentIndex].getRawContents());
+                        templateArrayStack.Push(currentTemplate);
+                        copyStack.Push(copyArray);
+                        currentTemplate = ((OSCBundle)currentTemplate[currentIndex].getRawContents()).getRawElements();
+                        IndexStack.Push(currentIndex);
+                        currentIndex = 0;
+                        depth++;
+                    }
+                    else
+                    {
+                        copyArray[currentIndex] = currentTemplate[currentIndex].Clone();
+                        currentIndex++;
+                    }
                 }
             }
+            return copyArray;
         }
-        return copyArray;
-    }
-    internal OSCBundleElement[] getRawElements()
-    {
-        return this.elements;
-    }
-    public OSCBundle clone()
-    {
-        
-        return new OSCBundle(this.getElements(),this.timeTag);
-    }
-    public long getTimeTag()
-    {
-        return this.timeTag;
-    }
-}
-
-public sealed class OSCBundleElement
-{
-    private OSCPackage contents;
-    private int dataSize;
-    private int size;
-    public OSCBundleElement(OSCPackage contents) 
-    {
-        this.contents = contents;
-        
-        
-        this.dataSize = this.contents.getSize();
-        //account for the size integer
-        this.size = 4 + this.dataSize;
-    }
-
-    public OSCBundleElement clone()
-    {
-        return new OSCBundleElement(this.getContents());
-    }
-    public OSCPackage getContents()
-    {
-        if (this.contents.getPackageType() == OSCPackageType.OSCMessage)
+        internal OSCBundleElement[] getRawElements()
         {
-            OSCMessage tempMessage = (OSCMessage)this.contents;
-            return tempMessage.clone();
+            return this.elements;
         }
-        else
+        public OSCBundle Clone()
         {
-            OSCBundle tempBundle= (OSCBundle)this.contents;
-            return (tempBundle.clone());
+
+            return new OSCBundle(this.getElements(), this.timeTag);
+        }
+        public long getTimeTag()
+        {
+            return this.timeTag;
         }
     }
 
-    internal OSCPackage getRawContents()
+    public sealed class OSCBundleElement
     {
-        if (this.contents.getPackageType() == OSCPackageType.OSCMessage)
+        private OSCPackage contents;
+        private int dataSize;
+        private int size;
+        public OSCBundleElement(OSCPackage contents)
         {
-            OSCMessage tempMessage = (OSCMessage)this.contents;
-            return tempMessage;
+            this.contents = contents;
+
+
+            this.dataSize = this.contents.getSize();
+            //account for the size integer
+            this.size = 4 + this.dataSize;
         }
-        else
+
+        public OSCBundleElement Clone()
         {
-            OSCBundle tempBundle = (OSCBundle)this.contents;
-            return tempBundle;
+            return new OSCBundleElement(this.getContents());
         }
-    }
+        public OSCPackage getContents()
+        {
+            if (this.contents.getPackageType() == OSCPackageType.OSCMessage)
+            {
+                OSCMessage tempMessage = (OSCMessage)this.contents;
+                return tempMessage.Clone();
+            }
+            else
+            {
+                OSCBundle tempBundle = (OSCBundle)this.contents;
+                return (tempBundle.Clone());
+            }
+        }
 
-    public string ToString()
-    {
-        return this.contents.ToString();
-    }
-    public int getSize()
-    {
-        return this.size;
-    }
+        internal OSCPackage getRawContents()
+        {
+            if (this.contents.getPackageType() == OSCPackageType.OSCMessage)
+            {
+                OSCMessage tempMessage = (OSCMessage)this.contents;
+                return tempMessage;
+            }
+            else
+            {
+                OSCBundle tempBundle = (OSCBundle)this.contents;
+                return tempBundle;
+            }
+        }
 
-    public int getDataSize()
-    {
-        return this.dataSize;
+        public string ToString()
+        {
+            return this.contents.ToString();
+        }
+        public int getSize()
+        {
+            return this.size;
+        }
+
+        public int getDataSize()
+        {
+            return this.dataSize;
+        }
     }
 }
