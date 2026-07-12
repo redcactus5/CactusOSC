@@ -336,46 +336,7 @@ namespace CactusOSC
         
         
         
-        //this us just used by the data segment interpreter's structure finding stage
-        //to denote the structure of the data segment. think nested lists and their sizes and all that
-        struct listTreeBuilderNode {
-            
-            
-            public int childLists;
-            public int values;
-            public int parentIndex;
-            public int index;
-            public bool isLeaf;
-            public int[] childrenIndexes;
-            public int childrenIndexesIndex;
-            public listTreeBuilderNode(int parentIndex,int childLists,int values,int index)
-            {
-                //the index in the holding array of this node's parent
-                this.parentIndex = parentIndex;
-                //the number of normal values in this array
-                this.values = values;
-                //the number of sublists in this array
-                this.childLists = childLists;
-                //whether this node is a leaf or not
-                this.isLeaf = true;
-                //i forget what this is for
-                this.index = index;
-                //the index of the children indexes array we are currently pointing to as the next open index(used for later)
-                this.childrenIndexesIndex = 0;
-            }
-        }
-
-        //just a simple struct to allow the return of two values instead of just one
-        private struct findListStructureReturn
-        {
-            public listTreeBuilderNode[] nodes;
-            public int maxDepth;
-            public findListStructureReturn(listTreeBuilderNode[] nodes, int maxDepth)
-            {
-                this.maxDepth = maxDepth;
-                this.nodes = nodes;
-            }
-        }
+        
 
         //a simple function that uses a clever algorithm to determine if the list structure is valid
         private void validateListCloses(ReadOnlySpan<byte> typeString)
@@ -408,8 +369,53 @@ namespace CactusOSC
             }
         }
 
+
+       
+        //this us just used by the data segment interpreter's structure finding stage
+        //to denote the structure of the data segment. think nested lists and their sizes and all that
+        struct listTreeBuilderNode
+        {
+
+
+            public int childLists;
+            public int values;
+            public int parentIndex;
+            public int index;
+
+            public int[] childrenIndexes;
+            public int nextOpenChildPosition;
+            public listTreeBuilderNode(int parentIndex, int childLists, int values, int index)
+            {
+                //the index in the holding array of this node's parent
+                this.parentIndex = parentIndex;
+                //the number of normal values in this array
+                this.values = values;
+                //the number of sublists in this array
+                this.childLists = childLists;
+                //where in the master list the node is
+                this.index = index;
+                //the index of the children indexes array we are currently pointing to as the next open index(used for later)
+                this.nextOpenChildPosition = 0;
+            }
+        }
+
+        //just a simple struct to allow the return of two values instead of just one
+        private struct findListStructureReturn
+        {
+            public listTreeBuilderNode[] nodes;
+            public int maxDepth;
+            public findListStructureReturn(listTreeBuilderNode[] nodes, int maxDepth)
+            {
+                this.maxDepth = maxDepth;
+                this.nodes = nodes;
+            }
+        }
+
+        
+        
         private findListStructureReturn findListStructure(ReadOnlySpan<byte> typeString)
         {
+            
             //validate that the typestring list structure is even valid in the first place
             validateListCloses(typeString);
             //find the number of lists in the typestring so we can use a fixed size array instead of a list, to speed up executuion
@@ -422,102 +428,72 @@ namespace CactusOSC
                 }
             }
             //this is the preallocated list where we store all the lists we find, including the base typestirng which we treat as a list here for simpler code
-            listTreeBuilderNode[] nodes = new listTreeBuilderNode[listCount+1];
-            //a fixed length stack we use to speed up execution and to store the index of the last node wee were on
-            int[] lastNodeIndex = new int[listCount];
-            int lastNodeIndexPointer = 0;
-            //a fixed length stack we use to speed up execution and to store the index in our parent list that this node is in
-            int[] indexInParent = new int[listCount];
-            int indexInParentPointer = 0;
+            listTreeBuilderNode[] nodes = new listTreeBuilderNode[listCount + 1];
             //the deepest we ever go, its useful for later so we can make yet more data structures fixed size
             int maxDepth = 0;
             //our current depth, its useful so we can find the max depth
             int depth = 0;
             //create our base node, that represents the typestring itself
-            nodes[0] = new listTreeBuilderNode(-1, 0, 0,-1);
+            nodes[0] = new listTreeBuilderNode(-1, 0, 0,0);
             //the positon wee put any new nodes we make
             int TopOfNodeList = 1;
             //the index in the nodes list of the node we are currently on
             int currentIndex = 0;
-            //i forget what this does
-            int currentParentIndex = 0;
-
-            listTreeBuilderNode currentNode;
             
 
-            //init our leafcount  to max, so we can decrement it later as fe find nodes that arent leaves
-            int leafcount = listCount;
+            listTreeBuilderNode currentNode=nodes[0];
+            
+
+            
             //loop through the entire typestring
             for (int i = 0; i<typeString.Length; i++)
             {
-                //if we find the start of a list
                 if (typeString[i] == '[')
                 {
-                    //keep track of our max depth
+                    currentNode.childLists++;
+                    nodes[currentIndex] = currentNode;
+                    
+                    currentNode = new listTreeBuilderNode(currentIndex, 0, 0, TopOfNodeList);
+                    nodes[TopOfNodeList] = currentNode;
+
+                    currentIndex = TopOfNodeList;
+                    TopOfNodeList++;
+
                     depth++;
-                    if(depth > maxDepth)
+                    if (depth > maxDepth)
                     {
                         maxDepth = depth;
                     }
-                    //create a new node for this list
-                    nodes[TopOfNodeList]=new listTreeBuilderNode(currentIndex,0,0,currentParentIndex);
-                    //i forget why we do this
-                    indexInParent[indexInParentPointer]=(currentParentIndex+1);
-                    indexInParentPointer++;
-                    //reset the current parent index to zero
-                    currentParentIndex = 0;
-                    //set that the current node is not a leaf becuase it has a sublist and update leaftcount accordingly
-                    currentNode = nodes[currentIndex];
-                    currentNode.isLeaf = false;
-                    leafcount--;
-                    //put our current node index onto the last node index stack as we are diving deeper into data structure, and need to remember where we were for when we surface
-                    lastNodeIndex[lastNodeIndexPointer]=currentIndex;
-                    lastNodeIndexPointer++;
-                    //give the current node a child list as we just found one
-                    currentNode.childLists += 1;
-                    nodes[currentIndex] = currentNode;
-                    //set our current node to the node we just created in order to dive to that new level
-                    currentIndex = TopOfNodeList;
-                    //increment the top of node index to the next open space
-                    TopOfNodeList++;
-                }
-                //if we find the end of a list
-                else if (typeString[i] == ']')
+                }else if (typeString[i] == ']')
                 {
-                    //surface by one level
-                    depth--;
-                    //give the current node a child indexes lsit ofr later, as we finally have found the number of child nodes it has and as such can use a preallocated array for it, we will find these indexes later
-                    currentNode = nodes[currentIndex];
+                    
                     currentNode.childrenIndexes = new int[currentNode.childLists];
                     nodes[currentIndex] = currentNode;
-                    //get the index of the parent node off the stack
-                    lastNodeIndexPointer--;
-                    currentIndex = lastNodeIndex[lastNodeIndexPointer];
-
-                    //and get its parent node index off the stack too
-                    indexInParentPointer--;
-                    currentParentIndex =indexInParent[indexInParentPointer];
+                    currentIndex = nodes[currentIndex].parentIndex;
+                    currentNode = nodes[currentIndex];
                     
-
+                    depth--;
                 }
-                //otherwise we have found a value and need to add one to the number of values the current node has
                 else
                 {
-                    currentNode = nodes[currentIndex];
-                    currentNode.values= currentNode.values + 1;
-                    nodes[currentIndex] = currentNode;
-                    currentParentIndex++;
+
+                    
+                    currentNode.values++;
                 }
             }
-            
-            for(int list=0; list<nodes.Length; list++)
+            currentNode.childrenIndexes = new int[currentNode.childLists];
+            nodes[currentIndex] = currentNode;
+            listTreeBuilderNode nodecache0;
+            listTreeBuilderNode nodeCache1;
+            for(int i = 0; i < nodes.Length; i++)
             {
-                if (nodes[list].parentIndex!=-1)
+                if (nodes[i].parentIndex != -1)
                 {
-                    currentNode = nodes[nodes[list].parentIndex];
-                    currentNode.childrenIndexes[currentNode.childrenIndexesIndex] = list;
-                    currentNode.childrenIndexesIndex = currentNode.childrenIndexesIndex + 1;
-                    nodes[nodes[list].parentIndex] = currentNode;
+                    nodecache0 = nodes[i];
+                    nodeCache1 = nodes[nodecache0.parentIndex];
+                    nodeCache1.childrenIndexes[nodeCache1.nextOpenChildPosition] = i;
+                    nodeCache1.nextOpenChildPosition++;
+                    nodes[nodecache0.parentIndex] = nodeCache1;
                 }
             }
 
