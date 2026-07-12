@@ -29,8 +29,86 @@ just create and start an OSCServer object and you are good to go! messages will 
 
 
 there is no real documentation, but it should be understandable with just the types file and some trial and error.
+in leu of documentation, have a complete example program.
+//example program:
+using CactusOSC;
+namespace demo
+{
+    public class OSCMaster
+    {
+        const string OSCServerAddress = "127.0.0.1";
+        const string receiveAddress = "127.0.0.1";
+        const UInt16 sendPort = 8000;
+        const UInt16 receivePort = 9000;
+        public OSCMaster()
+        {
+
+        }
+        
+        public void testOSCReceive()
+        {
+            OSCServer testServer=new OSCServer();
+            testServer.StartOSCServer(receivePort, receiveAddress, receivePort, OSCServerAddress);
+            RawOSCConverter testConverter= new RawOSCConverter();
+            OSCMessage demoMessage = new OSCMessage("/demo");
+
+            OSCInt testInt = new OSCInt(43110);
+            OSCString testString = new OSCString("test");
+            OSCFloat testFloat = new OSCFloat(3.14f);
+            OSCBlob testBlob = new OSCBlob(testConverter.EncodeOSCPackage(demoMessage));
+            OSCLong testLong = new OSCLong(43110L);
+            OSCTimeTag testTimeTag = new OSCTimeTag(new OSCTimeTagValue(0, 1));
+            OSCDouble testDouble = new OSCDouble(3.14d);
+            OSCNonstandardString testNonstandardString= new OSCNonstandardString("test");
+            OSCChar testChar = new OSCChar('c');
+            OSCColor testColor = new OSCColor(255, 0, 0, 255);
+            OSCMIDI testMidi = new OSCMIDI(0, 0x9c, 0x0, 0x7f);
+            OSCBool testBool = new OSCBool(true);
+            OSCNil testNil = new OSCNil();
+            OSCInfinitum testInf = new OSCInfinitum();
+
+            OSCValue[] templateOSCArray = new OSCValue[14] { testInt,testString,testFloat,testBlob,testLong,testTimeTag,testDouble,testNonstandardString,testChar,testColor,testMidi,testBool,testNil,testInf};
 
 
+            OSCArray testArray= new OSCArray(templateOSCArray);
+
+            OSCValue[] messageArguments= new OSCValue[15] { testArray, testInt, testString, testFloat, testBlob, testLong, testTimeTag, testDouble, testNonstandardString, testChar, testColor, testMidi, testBool, testNil, testInf };
+
+            OSCMessage testMessage=new OSCMessage("/test",messageArguments);
+
+            OSCBundleElement testElement = new OSCBundleElement(testMessage);
+
+            OSCBundleElement[] bundlePayloads= new OSCBundleElement[2] {testElement,testElement};
+
+            OSCBundle packageToSend= new OSCBundle(bundlePayloads);
+
+            while (true)
+            {
+
+                long startTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+                testServer.SendOSCPackage(packageToSend);
+                testServer.WaitForSendCompletion();
+                testServer.WaitForOSCPackageReception();
+                long endTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+                long elapsed=endTime- startTime;
+                Console.WriteLine(elapsed.ToString());
+                OSCPackage received;
+                
+                if(testServer.TryReceiveOSCPackage(out received))
+                {
+                    Console.WriteLine(received.ToString());
+                }
+                else
+                {
+                    Console.WriteLine("none received!");
+                }
+
+                Thread.Sleep(100);
+            }
+        }
+    }
+}
+//end example program
 
 i will say that Incoming messages are buffered internally in an ordered queue. Applications should poll frequently enough to prevent unbounded backlog growth. also Timetags are preserved but not scheduled.
 

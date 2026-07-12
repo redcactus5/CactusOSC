@@ -47,6 +47,7 @@ namespace CactusOSC
         /// <exception cref="serverNotStartedException"></exception>
         public bool TryReceiveOSCPackage(out OSCPackage targetPackage)
         {
+            
             if (started)
             {
                 return this.decoderEncoder.tryGetDecodedPackage(out targetPackage);
@@ -190,7 +191,15 @@ namespace CactusOSC
         {
             if (started)
             {
-                await channelMan.getReceivedPackagesChannel().Reader.WaitToReadAsync(shutdownTrigger.Token);
+                try
+                {
+                    await channelMan.getDecodedPackagesChannel().Reader.WaitToReadAsync(shutdownTrigger.Token);
+                }
+                catch (OperationCanceledException)
+                {
+
+                }
+
             }
             else
             {
@@ -206,7 +215,15 @@ namespace CactusOSC
         {
             if (started)
             {
-                channelMan.getReceivedPackagesChannel().Reader.WaitToReadAsync(shutdownTrigger.Token).GetAwaiter().GetResult();
+                try 
+                {
+                    channelMan.getDecodedPackagesChannel().Reader.WaitToReadAsync(shutdownTrigger.Token).AsTask().GetAwaiter().GetResult();
+                } 
+                catch (OperationCanceledException)
+                {
+
+                }
+                
             }  
             else
             {

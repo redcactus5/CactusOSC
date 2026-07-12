@@ -156,6 +156,7 @@ namespace CactusOSC
                     this.encodeFinishedTcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
                 }
                 this.inFlightCountGate.Release();
+                
                 await writer.WriteAsync(package, this.shutDownTrigger.Token);
             }
             catch(OperationCanceledException)
@@ -196,7 +197,9 @@ namespace CactusOSC
 
         private byte[] encodePackage(OSCPackage package)
         {
+            
             RawOSCPackage tempRawPackage = new RawOSCPackage(package.GetSize());
+            
             switch (package.GetPackageType())
             {
                 case OSCPackageType.OSCBundle:

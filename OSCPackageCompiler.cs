@@ -86,7 +86,7 @@ namespace CactusOSC
         private byte[] commaBytes;
         byte[] bundleIdent;
         private byte[][] typeStrings;
-        private byte[] nullByte;
+        private byte nullByte;
         private byte[][] paddingBytes;
         private bool[] shouldOSCValueDataBytesLookup;
         
@@ -97,7 +97,7 @@ namespace CactusOSC
             //init the constants and caches
             typeStrings = new byte[15][] { Encoding.UTF8.GetBytes("s"), Encoding.UTF8.GetBytes("i"), Encoding.UTF8.GetBytes("f"), Encoding.UTF8.GetBytes("b"), Encoding.UTF8.GetBytes("h"), Encoding.UTF8.GetBytes("t"), Encoding.UTF8.GetBytes("d"), Encoding.UTF8.GetBytes("S"), Encoding.UTF8.GetBytes("c"), Encoding.UTF8.GetBytes("r"), Encoding.UTF8.GetBytes("m"), Encoding.UTF8.GetBytes("T"), Encoding.UTF8.GetBytes("F"), Encoding.UTF8.GetBytes("N"), Encoding.UTF8.GetBytes("I") };
              shouldOSCValueDataBytesLookup= new bool[14] { true, true, true, true, true, true, true, true, true, true, true, false, false, false };
-            nullByte = new byte[] { 0 };
+            nullByte = 0;
             paddingBytes = new byte[4][] { Array.Empty<byte>(), new byte[] { 0 }, new byte[] { 0, 0 }, new byte[] { 0, 0, 0 } };
             
 
@@ -120,12 +120,14 @@ namespace CactusOSC
             int bytesWritten = 0;
             bytesWritten=target.writeData(this.openBracketBytes);
 
-            HashSet<OSCArray> seenArrays = new HashSet<OSCArray>();
-
+            List<HashSet<OSCArray>> seenArrays = new List<HashSet<OSCArray>>();
+            seenArrays.Add(new HashSet<OSCArray>());
+            seenArrays[0].Add(array);
+            seenArrays.Add(new HashSet<OSCArray>());
             OSCArray currentArray = array;
             OSCValue[] currentContents = currentArray.GetRawValue();
             int currentIndex = 0;
-            
+            int depth = 0;
 
             bool solving = true;
             while (solving)
@@ -135,11 +137,21 @@ namespace CactusOSC
                 {
                     if (currentContents[currentIndex].GetOSCType() == OSCValueType.OSCArray)
                     {
-                        if (seenArrays.Contains((OSCArray)currentContents[currentIndex]))
+                        if (depth > 0)
                         {
-                            throw new RecursiveListException();
+                            for (int search = 0; search < depth; search++)
+                            {
+                                if (seenArrays[search].Contains((OSCArray)currentContents[currentIndex]))
+                                {
+                                    throw new RecursiveListException();
+                                }
+                            }
                         }
-                        seenArrays.Add((OSCArray)currentContents[currentIndex]);
+                        
+
+                        seenArrays[depth].Add((OSCArray)currentContents[currentIndex]);
+                        depth++;
+                        seenArrays.Add(new HashSet<OSCArray>());
                         arrayStack.Push(currentArray);
                         restoreIndex.Push(currentIndex+1);
 
@@ -160,14 +172,15 @@ namespace CactusOSC
                     currentArray=arrayStack.Pop();
                     currentContents = currentArray.GetRawValue();
                     currentIndex = restoreIndex.Pop();
-
+                    seenArrays.RemoveAt(depth);
+                    depth--;
 
                 }
                 else
                 {
                     solving = false;
                 }
-                bytesWritten= target.writeData(this.closeBracketBytes);
+                bytesWritten+= target.writeData(this.closeBracketBytes);
             }
             
 
@@ -298,7 +311,7 @@ namespace CactusOSC
         private bool shouldGetOSCValueBytes(OSCValue value)
         {
             int typeCache = (int)value.GetOSCType();
-            if ((typeCache < 0) || (typeCache > this.shouldOSCValueDataBytesLookup.Length))
+            if ((typeCache < 0) || (typeCache >= this.shouldOSCValueDataBytesLookup.Length))
             {
                 throw new InvalidOSCValueTypeException();
             }
@@ -340,8 +353,9 @@ namespace CactusOSC
                         if (this.shouldGetOSCValueBytes(currentContents[currentIndex]))
                         {
                             this.getOSCValueBytes(currentContents[currentIndex],target);
-                            currentIndex++;
+                            
                         }
+                        currentIndex++;
                     }
 
                 }
@@ -398,7 +412,7 @@ namespace CactusOSC
                     
                 }
             }
-            typeStringSize+=target.writeData(this.nullByte);
+            typeStringSize+=target.writeByte(this.nullByte);
             int padding = this.calculateOSCStringOverflowSize(typeStringSize);
             target.writeData(this.paddingBytes[padding]);
             return target;
@@ -443,7 +457,7 @@ namespace CactusOSC
         {
             int textSize = Encoding.UTF8.GetByteCount(text);
             byte[] bytes = new byte[this.calculateOSCStringSize(textSize)];
-            //ensure the padding is cleared
+            //ensure the padding and null byte is cleared
             Array.Clear(bytes,textSize,bytes.Length-textSize);
             //fast copy
             Encoding.UTF8.GetBytes(text, 0, text.Length, bytes, 0);
@@ -456,11 +470,13 @@ namespace CactusOSC
             int totalSize = this.calculateOSCStringSize(byteCount);
 
             
-            int written = Encoding.UTF8.GetBytes(text,0,Encoding.UTF8.GetByteCount(text),target.getRawData(),target.getHead());
+            int written = Encoding.UTF8.GetBytes(text,0,text.Length,target.getRawData(),target.getHead());
             target.updateHead(written);
-            target.writeData(this.nullByte);
-            
-            int paddingBytes = calculateOSCStringOverflowSize(written+1);
+            target.writeByte(nullByte);
+            written += 1;
+
+
+            int paddingBytes = calculateOSCStringOverflowSize(written);
             target.writeData(this.paddingBytes[paddingBytes]);
 
             return written+paddingBytes;
@@ -477,6 +493,7 @@ namespace CactusOSC
         }
 
         
+        
         public RawOSCPackage convertOSCBundleToByteArray(OSCBundle bundle,RawOSCPackage target)
         {
             
@@ -490,10 +507,12 @@ namespace CactusOSC
             OSCBundle currentBundle = bundle;
             OSCBundleElement[] currentContents = currentBundle.GetRawElements();
             int currentIndex = 0;
-
+            int depth = 0;
             
-            HashSet<OSCBundle> seenBundles = new HashSet<OSCBundle>();
             
+            List<HashSet<OSCBundle>> seenStack = new List<HashSet<OSCBundle>>();
+            seenStack.Add(new HashSet<OSCBundle>());
+            seenStack[0].Add(bundle);
             //write bundle ident
             target.writeData(this.bundleIdent);
             //writeTimeTag
@@ -503,18 +522,28 @@ namespace CactusOSC
             bool solving = true;
             while (solving)
             {
-
+                
                 while (currentIndex < currentContents.Length)
                 {
+                    
                     if (currentContents[currentIndex].GetRawContents().GetPackageType() == OSCPackageType.OSCBundle)
                     {
-                        if (seenBundles.Contains((OSCBundle)currentContents[currentIndex].GetRawContents()))
+                        if (depth > 0)
                         {
-                            throw new RecursiveBundleException();
+                            for (int search = 0; search < depth; search++)
+                            {
+                                if (seenStack[search].Contains((OSCBundle)currentContents[currentIndex].GetRawContents()))
+                                {
+                                    throw new RecursiveBundleException();
 
+                                }
+                            }
                         }
-                        seenBundles.Add((OSCBundle)currentContents[currentIndex].GetRawContents());
-
+                        
+                        
+                        seenStack[depth].Add((OSCBundle)currentContents[currentIndex].GetRawContents());
+                        depth++;
+                        seenStack.Add(new HashSet<OSCBundle>());
                         subBundleStack.Push(currentBundle);
                         indexStack.Push(currentIndex + 1);
 
@@ -545,7 +574,8 @@ namespace CactusOSC
                     currentBundle = subBundleStack.Pop();
                     currentContents = currentBundle.GetRawElements();
                     currentIndex = indexStack.Pop();
-
+                    seenStack.RemoveAt(depth);
+                    depth--;
 
                 }
                 else

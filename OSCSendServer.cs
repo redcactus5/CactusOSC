@@ -44,7 +44,7 @@ namespace CactusOSC
                 sendServer.Close();
             }
             sendServer = new UdpClient(this.address, this.port);
-            sendFinished= new(TaskCreationOptions.RunContinuationsAsynchronously);
+            sendFinished= new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
             sendTask = Task.Run(SendOSC);
         }
         public void waitForSendFinish()
@@ -77,6 +77,7 @@ namespace CactusOSC
                     sendFinished.TrySetResult(true);
 
                     await messageQueue.Reader.WaitToReadAsync(shutdownTrigger.Token);
+                    
                     sendFinished = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
                 }
