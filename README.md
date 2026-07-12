@@ -29,8 +29,9 @@ just create and start an OSCServer object and you are good to go! messages will 
 
 
 there is no real documentation, but it should be understandable with just the types file and some trial and error.
-in leu of documentation, have a complete example program.
-//example program:
+in leu of documentation, have a complete example program:
+
+```
 using CactusOSC;
 namespace demo
 {
@@ -108,7 +109,8 @@ namespace demo
         }
     }
 }
-//end example program
+```
+end of example program;
 
 i will say that Incoming messages are buffered internally in an ordered queue. Applications should poll frequently enough to prevent unbounded backlog growth. also Timetags are preserved but not scheduled.
 
