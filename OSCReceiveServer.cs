@@ -78,6 +78,11 @@ namespace CactusOSC
                     //socket closed during shutdown
                     break;
                 }
+                catch (OperationCanceledException)
+                {
+                    //user called shutdown
+                    break;
+                }
             }
 
         }
