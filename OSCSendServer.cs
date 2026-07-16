@@ -49,6 +49,7 @@ namespace CactusOSC
         }
         public void waitForSendFinish()
         {
+            
             sendFinished.Task.GetAwaiter().GetResult();
             
         }
@@ -70,7 +71,7 @@ namespace CactusOSC
                     {
                         if (!messageCache.Equals(null))
                         {
-                            await sendServer.SendAsync(messageCache);
+                            await sendServer.SendAsync(messageCache,shutdownTrigger.Token);
                         }
 
                     }
@@ -93,6 +94,11 @@ namespace CactusOSC
                 catch (SocketException)
                 {
                     //socket closed during shutdown
+                    break;
+                }
+                catch (OperationCanceledException)
+                {
+                    //user triggered shutdown
                     break;
                 }
 
