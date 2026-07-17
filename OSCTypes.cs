@@ -109,7 +109,7 @@ namespace CactusOSC
         /// get the size of an OSCValue in bytes
         /// </summary>
         /// <returns>int</returns>
-        public int getByteSize()
+        public int GetByteSize()
         {
             return this.size;
         }
@@ -117,7 +117,7 @@ namespace CactusOSC
         /// get the Number of characters in typeString of an OSCValue
         /// </summary>
         /// <returns>int</returns>
-        public int getTypeStringSize()
+        public int GetTypeStringSize()
         {
             return this.typeStringSize;
         }
@@ -435,7 +435,7 @@ namespace CactusOSC
         /// gets the ulong internal Value of an OSCTimeTag
         /// </summary>
         /// <returns>Long</returns>
-        public ulong getValue()
+        public ulong GetValue()
         {
             return this.value;
         }
@@ -443,7 +443,7 @@ namespace CactusOSC
         /// gets the OSCTimeTagValue struct internal Value of an OSCTimeTag
         /// </summary>
         /// <returns>Long</returns>
-        public OSCTimeTagValue getParsedValue()
+        public OSCTimeTagValue GetParsedValue()
         {
             return new OSCTimeTagValue(this.value);
         }
@@ -630,10 +630,10 @@ namespace CactusOSC
 
         public OSCColorValue(int rgba)
         {
-            this.setColor(rgba);
+            this.SetColor(rgba);
         }
 
-        public void setColor(int rgba)
+        public void SetColor(int rgba)
         {
             this.r = (byte)((rgba >> 24) & 0xff);
             this.g = (byte)((rgba >> 16) & 0xff);
@@ -641,7 +641,7 @@ namespace CactusOSC
             this.a = (byte)(rgba & 0xff);
         }
 
-        public int getColor(int rgba)
+        public int GetColor(int rgba)
         {
             return (((this.r << 24) & (0xff << 24)) | ((this.g << 16) & (0xff << 16)) | ((this.b << 8) & (0xff << 8)) | ((this.a) & 0xff));
         }
@@ -975,8 +975,8 @@ namespace CactusOSC
             int tempTypeStringSize = 0;
             for (int index = 0; index < data.Length; index++)
             {
-                tempsize += data[index].getByteSize();
-                tempTypeStringSize += data[index].getTypeStringSize();
+                tempsize += data[index].GetByteSize();
+                tempTypeStringSize += data[index].GetTypeStringSize();
             }
             this.setByteSize(tempsize);
             this.setTypeStringSize(2 + tempTypeStringSize);

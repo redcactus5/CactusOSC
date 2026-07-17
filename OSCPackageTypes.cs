@@ -109,8 +109,8 @@ namespace CactusOSC
             int dataSize = 0;
             for (int index = 0; index < this.values.Length; index++)
             {
-                dataSize += values[index].getByteSize();
-                typeStringSize += values[index].getTypeStringSize();
+                dataSize += values[index].GetByteSize();
+                typeStringSize += values[index].GetTypeStringSize();
             }
             //calculate the final size
 
