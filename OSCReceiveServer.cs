@@ -90,7 +90,7 @@ namespace CactusOSC
         {
             if (receiveServer == null)
             {
-                throw new serverNotStartedException();
+                throw new ServerNotStartedException();
             }
             this.shutdownTrigger.Cancel();
             this.receiveTask.GetAwaiter().GetResult();

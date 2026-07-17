@@ -109,7 +109,7 @@ namespace CactusOSC
         {
             if (sendServer == null)
             {
-                throw new serverNotStartedException();
+                throw new ServerNotStartedException();
             }
             this.shutdownTrigger.Cancel();
             this.sendServer.Close();

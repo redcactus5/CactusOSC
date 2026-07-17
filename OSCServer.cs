@@ -44,7 +44,7 @@ namespace CactusOSC
         /// </summary>
         /// <param name="targetPackage"></param>
         /// <returns>bool</returns>
-        /// <exception cref="serverNotStartedException"></exception>
+        /// <exception cref="ServerNotStartedException"></exception>
         public bool TryReceiveOSCPackage(out OSCPackage targetPackage)
         {
             
@@ -54,7 +54,7 @@ namespace CactusOSC
             }
             else
             {
-                throw new serverNotStartedException();
+                throw new ServerNotStartedException();
             }
             
         }
@@ -63,7 +63,7 @@ namespace CactusOSC
         /// receive either an empty list or a list of decoded packages if packages are avalable to receive
         /// </summary>
         /// <returns>list of OSCPackage</returns>
-        /// <exception cref="serverNotStartedException"></exception>
+        /// <exception cref="ServerNotStartedException"></exception>
         public List<OSCPackage> ReceiveOSCPackageList()
         {
             if (started)
@@ -72,7 +72,7 @@ namespace CactusOSC
             }
             else
             {
-                throw new serverNotStartedException();
+                throw new ServerNotStartedException();
             }
             
         }
@@ -80,7 +80,7 @@ namespace CactusOSC
         /// send an OSCPackage over udp
         /// </summary>
         /// <param name="packageToSend"></param>
-        /// <exception cref="serverNotStartedException"></exception>
+        /// <exception cref="ServerNotStartedException"></exception>
         public void SendOSCPackage(OSCPackage packageToSend)
         {
             if (started)
@@ -89,7 +89,7 @@ namespace CactusOSC
             }
             else
             {
-                throw new serverNotStartedException();
+                throw new ServerNotStartedException();
             }
             
         }
@@ -98,7 +98,7 @@ namespace CactusOSC
         /// </summary>
         /// <param name="packageToSend"></param>
         /// <returns></returns>
-        /// <exception cref="serverNotStartedException"></exception>
+        /// <exception cref="ServerNotStartedException"></exception>
         public async Task SendOSCPackageAsync(OSCPackage packageToSend)
         {
             if (started)
@@ -107,7 +107,7 @@ namespace CactusOSC
             }
             else
             {
-                throw new serverNotStartedException();
+                throw new ServerNotStartedException();
             }
             
         }
@@ -116,7 +116,7 @@ namespace CactusOSC
         /// send a list of OSC packages over udp, in order
         /// </summary>
         /// <param name="packageListToSend"></param>
-        /// <exception cref="serverNotStartedException"></exception>
+        /// <exception cref="ServerNotStartedException"></exception>
         public void SendOSCPackageList(List<OSCPackage> packageListToSend)
         {
             if (started)
@@ -125,7 +125,7 @@ namespace CactusOSC
             }
             else
             {
-                throw new serverNotStartedException();
+                throw new ServerNotStartedException();
             }
             
         }
@@ -134,7 +134,7 @@ namespace CactusOSC
         /// </summary>
         /// <param name="packageListToSend"></param>
         /// <returns></returns>
-        /// <exception cref="serverNotStartedException"></exception>
+        /// <exception cref="ServerNotStartedException"></exception>
         public async Task SendOSCPackageListAsync(List<OSCPackage> packageListToSend)
         {
             if (started)
@@ -143,7 +143,7 @@ namespace CactusOSC
             }
             else
             {
-                throw new serverNotStartedException();
+                throw new ServerNotStartedException();
             }
 
         }
@@ -151,7 +151,7 @@ namespace CactusOSC
         /// <summary>
         /// wait for the server send queues to empty
         /// </summary>
-        /// <exception cref="serverNotStartedException"></exception>
+        /// <exception cref="ServerNotStartedException"></exception>
         public void WaitForSendCompletion()
         {
             if (started)
@@ -161,14 +161,14 @@ namespace CactusOSC
             }
             else
             {
-                throw new serverNotStartedException();
+                throw new ServerNotStartedException();
             }
         }
 
         /// <summary>
         /// asyncrounously wait for the server send queues to empty
         /// </summary>
-        /// <exception cref="serverNotStartedException"></exception>
+        /// <exception cref="ServerNotStartedException"></exception>
         public async Task WaitForSendCompletionAsync()
         {
             if (started)
@@ -178,7 +178,7 @@ namespace CactusOSC
             }
             else
             {
-                throw new serverNotStartedException();
+                throw new ServerNotStartedException();
             }
         }
 
@@ -186,7 +186,7 @@ namespace CactusOSC
         /// asyncrounously wait for an oscPackage to be added to the send list
         /// </summary>
         /// <returns>Task</returns>
-        /// <exception cref="serverNotStartedException"></exception>
+        /// <exception cref="ServerNotStartedException"></exception>
         public async Task WaitForOSCPackageReceptionAsync()
         {
             if (started)
@@ -203,14 +203,14 @@ namespace CactusOSC
             }
             else
             {
-                throw new serverNotStartedException();
+                throw new ServerNotStartedException();
             }
 
         }
         /// <summary>
         /// wait for an oscPackage to be added to the send list
         /// </summary>
-        /// <exception cref="serverNotStartedException"></exception>
+        /// <exception cref="ServerNotStartedException"></exception>
         public void WaitForOSCPackageReception()
         {
             if (started)
@@ -227,7 +227,7 @@ namespace CactusOSC
             }  
             else
             {
-                throw new serverNotStartedException();
+                throw new ServerNotStartedException();
             }
         }
 
@@ -235,7 +235,7 @@ namespace CactusOSC
         /// check if the send queue has any open space (not recomended for asyncrounous code)
         /// </summary>
         /// <returns>bool</returns>
-        /// <exception cref="serverNotStartedException"></exception>
+        /// <exception cref="ServerNotStartedException"></exception>
         public bool IsSendQueueFull()
         {
             if (started)
@@ -251,7 +251,7 @@ namespace CactusOSC
             }
             else
             {
-                throw new serverNotStartedException();
+                throw new ServerNotStartedException();
             }
         }
         /// <summary>
@@ -270,7 +270,7 @@ namespace CactusOSC
         /// <summary>
         /// wait for there to be space in the send queue
         /// </summary>
-        /// <exception cref="serverNotStartedException"></exception>
+        /// <exception cref="ServerNotStartedException"></exception>
         public void WaitForSendQueueSpace()
         {
             if (started)
@@ -283,7 +283,7 @@ namespace CactusOSC
             }
             else
             {
-                throw new serverNotStartedException();
+                throw new ServerNotStartedException();
             }
             
         }
@@ -291,7 +291,7 @@ namespace CactusOSC
         /// asyncrounously wait for there to be space in the send queue
         /// </summary>
         /// <returns></returns>
-        /// <exception cref="serverNotStartedException"></exception>
+        /// <exception cref="ServerNotStartedException"></exception>
         public async Task WaitForSendQueueSpaceAsync()
         {
             if (started)
@@ -304,7 +304,7 @@ namespace CactusOSC
             }
             else
             {
-                throw new serverNotStartedException();
+                throw new ServerNotStartedException();
             }
 
         }
@@ -318,7 +318,7 @@ namespace CactusOSC
         /// <param name="unboundedQueueMode"></param>
         /// <param name="boundedQueueSize"></param>
         /// <param name="dropMode"></param>
-        /// <exception cref="serverAlreadyStartedException"></exception>
+        /// <exception cref="ServerAlreadyStartedException"></exception>
         public void StartOSCServer(ushort receivePort, string receiveIP, ushort sendPort, string sendIP, bool unboundedQueueMode=true, int boundedQueueSize=50000,OSCQueueDropMode dropMode=OSCQueueDropMode.dropNewest)
         {
             if (!this.started)
@@ -372,13 +372,13 @@ namespace CactusOSC
             }
             else
             {
-                throw new serverAlreadyStartedException();
+                throw new ServerAlreadyStartedException();
             }
         }
         /// <summary>
         /// shut down a running OSC server instance
         /// </summary>
-        /// <exception cref="serverNotStartedException"></exception>
+        /// <exception cref="ServerNotStartedException"></exception>
         public void ShutDown()
         {
             if (this.started)
@@ -416,7 +416,7 @@ namespace CactusOSC
             }
             else
             {
-                throw new serverNotStartedException();
+                throw new ServerNotStartedException();
             }
         }
     }
