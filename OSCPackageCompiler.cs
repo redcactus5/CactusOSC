@@ -279,7 +279,7 @@ namespace CactusOSC
                     
                     break;
                 case OSCValueType.OSCTimeTag:
-                    BinaryPrimitives.WriteUInt64BigEndian(target.getWriteSpan8(), ((OSCTimeTag)value).getValue());
+                    BinaryPrimitives.WriteUInt64BigEndian(target.getWriteSpan8(), ((OSCTimeTag)value).GetValue());
                     
                     break;
                 case OSCValueType.OSCDouble:
