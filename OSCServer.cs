@@ -265,7 +265,7 @@ namespace CactusOSC
                 shutdownTrigger.Dispose();
                 shutdownTrigger = null;
             }
-            
+            this.ShutDown();
         }
         /// <summary>
         /// wait for there to be space in the send queue
@@ -330,37 +330,45 @@ namespace CactusOSC
                 shutdownTrigger = new CancellationTokenSource();
                 this.boundedMode = !unboundedQueueMode;
                 this.channelCapacity = boundedQueueSize;
-                if (this.channelMan != null)
+                try
                 {
-                    this.channelMan.shutDown();
-                }
+                    if (this.channelMan != null)
+                    {
+                        this.channelMan.shutDown();
+                    }
 
-                this.channelMan = new ChannelManager(unboundedQueueMode,boundedQueueSize,dropMode);
+                    this.channelMan = new ChannelManager(unboundedQueueMode, boundedQueueSize, dropMode);
 
-                if (this.decoderEncoder != null)
-                {
-                    this.decoderEncoder.shutdown();
-                }
-                this.decoderEncoder = new DecodeEncodeServer(this.channelMan);
-                if (this.OSCReceiver != null)
-                {
-                    this.OSCReceiver.shutdownServer();
-                }
-                this.OSCReceiver = new OSCReceiveServer(this.channelMan, this.receiveIP, this.receivePort);
-                if (this.OSCSender != null)
-                {
-                    this.OSCSender.shutdownServer();
-                }
-                this.OSCSender = new OSCSendServer(this.channelMan, this.sendIP, this.sendPort);
+                    if (this.decoderEncoder != null)
+                    {
+                        this.decoderEncoder.shutdown();
+                    }
+                    this.decoderEncoder = new DecodeEncodeServer(this.channelMan);
+                    if (this.OSCReceiver != null)
+                    {
+                        this.OSCReceiver.shutdownServer();
+                    }
+                    this.OSCReceiver = new OSCReceiveServer(this.channelMan, this.receiveIP, this.receivePort);
+                    if (this.OSCSender != null)
+                    {
+                        this.OSCSender.shutdownServer();
+                    }
+                    this.OSCSender = new OSCSendServer(this.channelMan, this.sendIP, this.sendPort);
 
-                this.decoderEncoder.start().Wait();
-                this.OSCSender.start();
-                this.OSCReceiver.start();
+                    this.decoderEncoder.start().GetAwaiter().GetResult();
+                    this.OSCSender.start();
+                    this.OSCReceiver.start();
+
+
+
+
+                    this.started = true;
+                }
+                catch(Exception error)
+                {
+                    this.ShutDown();
+                }
                 
-
-
-
-                this.started = true;
             }
             else
             {
@@ -371,7 +379,7 @@ namespace CactusOSC
         /// shut down a running OSC server instance
         /// </summary>
         /// <exception cref="serverNotStartedException"></exception>
-        public void ShutDownOSCServer()
+        public void ShutDown()
         {
             if (this.started)
             {
@@ -398,7 +406,11 @@ namespace CactusOSC
                 }
                 this.channelMan = null;
 
-                this.Dispose();
+                if (shutdownTrigger != null)
+                {
+                    shutdownTrigger.Dispose();
+                    shutdownTrigger = null;
+                }
                 this.started = false;
 
             }
