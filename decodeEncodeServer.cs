@@ -10,7 +10,7 @@ CactusOSC is distributed in the hope that it will be useful, but WITHOUT ANY WAR
 You should have received a copy of the GNU Lesser General Public License along with CactusOSC. If not, see <https://www.gnu.org/licenses/>. 
 */
 
-using System.Collections.Concurrent;
+
 
 using System.Threading.Channels;
 
@@ -34,8 +34,8 @@ namespace CactusOSC
         private TaskCompletionSource<bool> encodeFinishedTcs;
         private int inFlightCount;
         private SemaphoreSlim inFlightCountGate;
-
-
+        private int CoreCount;
+        private const int reserveCores = 4;
         public DecodeEncodeServer(ChannelManager channelKeeper)
         {
 
@@ -63,29 +63,31 @@ namespace CactusOSC
             {
                 if (!this.shutDownTrigger.IsCancellationRequested)
                 {
-                    this.shutDownTrigger.Cancel();
-                    await DecoderServer;
-                    await EncoderServer;
+                    this.shutdown();
                 }
             }
             this.shutDownTrigger = new CancellationTokenSource();
-            
-            
-            
 
-         
 
-            this.EncoderServer = this.encodeService();
-            this.DecoderServer = this.DecodingService();
+
 
             if (this.encodeFinishedTcs != null)
             {
                 this.encodeFinishedTcs.SetResult(true);
                 this.encodeFinishedTcs = null;
+
             }
-            this.encodeFinishedTcs=new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            this.CoreCount = Math.Max(1, (this.CoreCount-reserveCores));
+            
+            this.encodeFinishedTcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
             this.inFlightCount = 0;
-            this.inFlightCountGate=new SemaphoreSlim(1);
+            this.inFlightCountGate = new SemaphoreSlim(1);
+
+
+            this.EncoderServer = this.encodingService();
+            this.DecoderServer = this.DecodingService();
+
 
 
         }
@@ -93,20 +95,24 @@ namespace CactusOSC
 
         public void shutdown()
         {
-            if (!this.shutDownTrigger.IsCancellationRequested)
-            {
-                this.shutDownTrigger.Cancel();
-                
-            }
             
             
+            this.Dispose();
             
             
         }
 
         public void Dispose()
         {
-            this.shutdown();
+            if (!this.shutDownTrigger.IsCancellationRequested)
+            {
+                this.shutDownTrigger.Cancel();
+
+            }
+            DecoderServer.GetAwaiter().GetResult();
+            this.DecoderServer = null;
+            EncoderServer.GetAwaiter().GetResult();
+            this.EncoderServer = null;
             if (this.shutDownTrigger != null)
             {
                 this.shutDownTrigger.Dispose();
@@ -229,9 +235,13 @@ namespace CactusOSC
         private async Task DecodingService()
         {
             ChannelReader<byte[]> reader = this.channelKeeper.getReceivedPackagesChannel();
+            ChannelWriter<OSCPackage> writer = this.decodedPackages.Writer;
             byte[][] input=new byte[1024][];
             int inputIndex = 0;
-            
+            ParallelOptions swarmOptions = new ParallelOptions()
+            {
+                MaxDegreeOfParallelism = this.CoreCount
+            };
             byte[] inputCache;
             
             OSCPackage[] finishArray=new OSCPackage[1024];
@@ -253,7 +263,7 @@ namespace CactusOSC
 
                     }
 
-                    Parallel.For(0, inputIndex, currentElement =>
+                    Parallel.For(0, inputIndex, swarmOptions, currentElement =>
                     {
 
                         try
@@ -274,11 +284,13 @@ namespace CactusOSC
                     {
                         if (finishArray[i] != null)
                         {
-                            await this.decodedPackages.Writer.WriteAsync(finishArray[i], this.shutDownTrigger.Token);
+                            await writer.WriteAsync(finishArray[i], this.shutDownTrigger.Token);
                         }
 
                     }
                     inputIndex = 0;
+                    Array.Clear(finishArray,0, finishArray.Length);
+
                 }
             }
             catch (OperationCanceledException)
@@ -292,12 +304,15 @@ namespace CactusOSC
         }
 
 
-        private async Task encodeService()
+        private async Task encodingService()
         {
             ChannelReader<OSCPackage> reader = packagesToEncode.Reader;
             OSCPackage[] input = new OSCPackage[1024];
             int inputIndex = 0;
-
+            ParallelOptions swarmOptions = new ParallelOptions()
+            {
+                MaxDegreeOfParallelism = this.CoreCount
+            };
             OSCPackage inputCache;
 
             byte[][] finishArray = new byte[1024][];
@@ -319,7 +334,7 @@ namespace CactusOSC
 
                     }
 
-                    Parallel.For(0, inputIndex, currentElement =>
+                    Parallel.For(0, inputIndex, swarmOptions, currentElement =>
                     {
                         finishArray[currentElement] = (this.encodePackage(input[currentElement]));
                     });
@@ -328,6 +343,7 @@ namespace CactusOSC
                     {
                         await this.channelKeeper.transferPackageToSend(finishArray[i]);
                     }
+                    Array.Clear(finishArray, 0, finishArray.Length);
                     await this.inFlightCountGate.WaitAsync(this.shutDownTrigger.Token);
                     if ((this.encodeFinishedTcs != null)&&(!this.encodeFinishedTcs.Task.IsCompleted))
                     {

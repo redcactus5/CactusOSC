@@ -15,50 +15,50 @@ using System.Text;
 
 namespace CactusOSC
 {
-    public class serverAlreadyStartedException: Exception
+    public class ServerAlreadyStartedException: InvalidOperationException
     {
-        public serverAlreadyStartedException()
+        public ServerAlreadyStartedException()
         {
         }
 
-        public serverAlreadyStartedException(string message)
+        public ServerAlreadyStartedException(string message)
             : base(message)
         {
         }
 
-        public serverAlreadyStartedException(string message, Exception innerException)
+        public ServerAlreadyStartedException(string message, Exception innerException)
             : base(message, innerException)
         {
         }
     }
-    public class serverNotStartedException: Exception
+    public class ServerNotStartedException: InvalidOperationException
     {
-        public serverNotStartedException()
+        public ServerNotStartedException()
         {
         }
 
-        public serverNotStartedException(string message)
+        public ServerNotStartedException(string message)
             : base(message)
         {
         }
 
-        public serverNotStartedException(string message, Exception innerException)
+        public ServerNotStartedException(string message, Exception innerException)
             : base(message, innerException)
         {
         }
     }
-    class parserStuckException: InvalidBundleException
+    class ParserStuckException: InvalidBundleException
     {
-        public parserStuckException()
+        public ParserStuckException()
         {
         }
 
-        public parserStuckException(string message)
+        public ParserStuckException(string message)
             : base(message)
         {
         }
 
-        public parserStuckException(string message, Exception innerException)
+        public ParserStuckException(string message, Exception innerException)
             : base(message, innerException)
         {
         }
