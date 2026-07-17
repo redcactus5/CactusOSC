@@ -31,7 +31,7 @@ just create and start an OSCServer object and you are good to go! messages will 
 there is no real documentation, but it should be understandable with just the types file and some trial and error.
 in leu of documentation, have a complete example program:
 
-```
+```csharp
 using CactusOSC;
 namespace demo
 {

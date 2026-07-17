@@ -14,10 +14,10 @@ namespace CactusOSC
 {
     public enum OSCQueueDropMode
     {
-        dropOldest,
-        dropNewest,
-        wait,
-        dropWrite
+        DropOldest,
+        DropNewest,
+        Wait,
+        DropWrite
     }
     internal class ChannelManager
     {
@@ -26,9 +26,9 @@ namespace CactusOSC
         private Channel<OSCPackage> packagesToEncode;
         private Channel<OSCPackage> decodedPackages;
         
-        public ChannelManager(bool unboundedMode, int boundedQueueSize,OSCQueueDropMode dropMode)
+        public ChannelManager(bool UnboundedMode, int BoundedQueueSize,OSCQueueDropMode ReceiveDropMode,OSCQueueDropMode sendDropMode)
         {
-            if (unboundedMode)
+            if (UnboundedMode)
             {
                 PackagesToSend = Channel.CreateUnbounded<byte[]>();
                 receivedPackages = Channel.CreateUnbounded<byte[]>();
@@ -37,37 +37,37 @@ namespace CactusOSC
             }
             else
             {
-                BoundedChannelOptions tempOptions;
-                switch (dropMode)
+                BoundedChannelOptions ReceiveOptions;
+                switch (ReceiveDropMode)
                 {
-                    case(OSCQueueDropMode.dropOldest):
-                        tempOptions= new BoundedChannelOptions(boundedQueueSize)
+                    case(OSCQueueDropMode.DropOldest):
+                        ReceiveOptions= new BoundedChannelOptions(BoundedQueueSize)
                         {
                             FullMode = BoundedChannelFullMode.DropOldest,
                             SingleReader = true,
                             SingleWriter = false
                         };
                         break;
-                    case (OSCQueueDropMode.dropNewest):
-                        tempOptions = new BoundedChannelOptions(boundedQueueSize)
+                    case (OSCQueueDropMode.DropNewest):
+                        ReceiveOptions = new BoundedChannelOptions(BoundedQueueSize)
                         {
                             FullMode = BoundedChannelFullMode.DropNewest,
                             SingleReader = true,
                             SingleWriter = false
                         };
                         break;
-                    case (OSCQueueDropMode.wait):
+                    case (OSCQueueDropMode.Wait):
                     
-                        tempOptions = new BoundedChannelOptions(boundedQueueSize)
+                        ReceiveOptions = new BoundedChannelOptions(BoundedQueueSize)
                         {
                             FullMode = BoundedChannelFullMode.Wait,
                             SingleReader = true,
                             SingleWriter = false
                         };
                         break;
-                    case (OSCQueueDropMode.dropWrite):
+                    case (OSCQueueDropMode.DropWrite):
 
-                        tempOptions = new BoundedChannelOptions(boundedQueueSize)
+                        ReceiveOptions = new BoundedChannelOptions(BoundedQueueSize)
                         {
                             FullMode = BoundedChannelFullMode.DropWrite,
                             SingleReader = true,
@@ -77,12 +77,50 @@ namespace CactusOSC
                     default:
                         throw new InvalidOSCDropPolicyException();
                 }
-                
-                
-                PackagesToSend = Channel.CreateBounded<byte[]>(tempOptions);
-                receivedPackages = Channel.CreateBounded<byte[]>(tempOptions);
-                packagesToEncode = Channel.CreateBounded<OSCPackage>(tempOptions);
-                decodedPackages = Channel.CreateBounded<OSCPackage>(tempOptions);
+                BoundedChannelOptions SendOptions;
+                switch (sendDropMode)
+                {
+                    case (OSCQueueDropMode.DropOldest):
+                        SendOptions = new BoundedChannelOptions(BoundedQueueSize)
+                        {
+                            FullMode = BoundedChannelFullMode.DropOldest,
+                            SingleReader = false,
+                            SingleWriter = false
+                        };
+                        break;
+                    case (OSCQueueDropMode.DropNewest):
+                        SendOptions = new BoundedChannelOptions(BoundedQueueSize)
+                        {
+                            FullMode = BoundedChannelFullMode.DropNewest,
+                            SingleReader = false,
+                            SingleWriter = false
+                        };
+                        break;
+                    case (OSCQueueDropMode.Wait):
+
+                        SendOptions = new BoundedChannelOptions(BoundedQueueSize)
+                        {
+                            FullMode = BoundedChannelFullMode.Wait,
+                            SingleReader = false,
+                            SingleWriter = false
+                        };
+                        break;
+                    case (OSCQueueDropMode.DropWrite):
+
+                        SendOptions = new BoundedChannelOptions(BoundedQueueSize)
+                        {
+                            FullMode = BoundedChannelFullMode.DropWrite,
+                            SingleReader = false,
+                            SingleWriter = false
+                        };
+                        break;
+                    default:
+                        throw new InvalidOSCDropPolicyException();
+                }
+                PackagesToSend = Channel.CreateBounded<byte[]>(SendOptions);
+                receivedPackages = Channel.CreateBounded<byte[]>(ReceiveOptions);
+                packagesToEncode = Channel.CreateBounded<OSCPackage>(SendOptions);
+                decodedPackages = Channel.CreateBounded<OSCPackage>(ReceiveOptions);
             }
             
         }

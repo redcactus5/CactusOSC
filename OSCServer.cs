@@ -317,9 +317,9 @@ namespace CactusOSC
         /// <param name="sendIP"></param>
         /// <param name="unboundedQueueMode"></param>
         /// <param name="boundedQueueSize"></param>
-        /// <param name="dropMode"></param>
+        /// <param name="ReceiveDropMode"></param>
         /// <exception cref="ServerAlreadyStartedException"></exception>
-        public void StartOSCServer(ushort receivePort, string receiveIP, ushort sendPort, string sendIP, bool unboundedQueueMode=true, int boundedQueueSize=50000,OSCQueueDropMode dropMode=OSCQueueDropMode.dropNewest)
+        public void StartOSCServer(ushort receivePort, string receiveIP, ushort sendPort, string sendIP, bool unboundedQueueMode=true, int boundedQueueSize=50000,OSCQueueDropMode ReceiveDropMode=OSCQueueDropMode.DropNewest,OSCQueueDropMode SendDropMode=OSCQueueDropMode.Wait)
         {
             if (!this.started)
             {
@@ -337,7 +337,7 @@ namespace CactusOSC
                         this.channelMan.shutDown();
                     }
 
-                    this.channelMan = new ChannelManager(unboundedQueueMode, boundedQueueSize, dropMode);
+                    this.channelMan = new ChannelManager(unboundedQueueMode, boundedQueueSize, ReceiveDropMode,SendDropMode);
 
                     if (this.decoderEncoder != null)
                     {
