@@ -78,7 +78,7 @@ namespace CactusOSC
 
             }
 
-            this.CoreCount = Math.Max(1, (this.CoreCount-reserveCores));
+            this.CoreCount = Math.Max(1, (Environment.ProcessorCount-reserveCores));
             
             this.encodeFinishedTcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
             this.inFlightCount = 0;
