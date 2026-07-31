@@ -47,7 +47,7 @@ namespace CactusOSC
         {
         }
     }
-    class ParserStuckException: InvalidBundleException
+    public class ParserStuckException: InvalidBundleException
     {
         public ParserStuckException()
         {
@@ -63,7 +63,7 @@ namespace CactusOSC
         {
         }
     }
-    class InvalidBundleException: InvalidPackageException
+    public class InvalidBundleException: InvalidPackageException
     {
         public InvalidBundleException()
         {
@@ -80,7 +80,7 @@ namespace CactusOSC
         }
     }
     
-    class IncompleteBundleException: InvalidBundleException
+    public class IncompleteBundleException: InvalidBundleException
     {
         public IncompleteBundleException()
         {
@@ -97,7 +97,7 @@ namespace CactusOSC
         }
     }
 
-    class IndexAlreadyPopulatedException : Exception
+    public class IndexAlreadyPopulatedException : Exception
     {
         public IndexAlreadyPopulatedException()
         {
@@ -115,7 +115,7 @@ namespace CactusOSC
     }
     
 
-    class InvalidPackageException: Exception
+    public class InvalidPackageException: Exception
     {
         public InvalidPackageException()
         {
@@ -132,7 +132,7 @@ namespace CactusOSC
         }
     }
 
-    class IncompleteOSCDataException: InvalidPackageException
+    public class IncompleteOSCDataException: InvalidPackageException
     {
         public IncompleteOSCDataException()
         {
@@ -148,7 +148,7 @@ namespace CactusOSC
         {
         }
     }
-    class InvalidOSCDataException : InvalidPackageException
+    public class InvalidOSCDataException : InvalidPackageException
     {
         public InvalidOSCDataException()
         {
@@ -164,7 +164,7 @@ namespace CactusOSC
         {
         }
     }
-    class InvalidOSCAddressException : InvalidPackageException
+    public class InvalidOSCAddressException : InvalidPackageException
     {
         public InvalidOSCAddressException()
         {
@@ -180,7 +180,7 @@ namespace CactusOSC
         {
         }
     }
-    class OSCListNodeReturnTypeMismatchException: Exception
+    public class OSCListNodeReturnTypeMismatchException: Exception
     {
         public OSCListNodeReturnTypeMismatchException()
         {
@@ -196,7 +196,7 @@ namespace CactusOSC
         {
         }
     }
-    class InvalidOSCStringException : InvalidPackageException
+    public class InvalidOSCStringException : InvalidPackageException
     {
         public InvalidOSCStringException()
         {
@@ -212,7 +212,7 @@ namespace CactusOSC
         {
         }
     }
-    class InvalidTypestringException: InvalidOSCStringException
+    public class InvalidTypestringException: InvalidOSCStringException
     {
         public InvalidTypestringException()
         {
@@ -230,7 +230,7 @@ namespace CactusOSC
 
     }
 
-    class OSCStringNotNullTerminatedException : InvalidOSCStringException
+    public class OSCStringNotNullTerminatedException : InvalidOSCStringException
     {
         public OSCStringNotNullTerminatedException()
         {
@@ -281,7 +281,7 @@ namespace CactusOSC
         }
     }
 
-    class RecursiveListException : InvalidPackageException
+    public class RecursiveListException : InvalidPackageException
     {
         public RecursiveListException()
         {
@@ -298,7 +298,7 @@ namespace CactusOSC
         }
 
     }
-    class RecursiveBundleException : InvalidPackageException
+    public class RecursiveBundleException : InvalidPackageException
     {
         public RecursiveBundleException()
         {
@@ -316,7 +316,7 @@ namespace CactusOSC
 
     }
 
-    class InvalidOSCDropPolicyException : Exception
+    public class InvalidOSCDropPolicyException : Exception
     {
         public InvalidOSCDropPolicyException()
         {
@@ -334,7 +334,7 @@ namespace CactusOSC
 
     }
 
-    class InvalidBundleElementException : InvalidBundleException
+    public class InvalidBundleElementException : InvalidBundleException
     {
         public InvalidBundleElementException()
         {
@@ -352,7 +352,7 @@ namespace CactusOSC
 
     }
 
-    class EncodeDecodeTaskAlreadyRunningException : Exception
+    public class EncodeDecodeTaskAlreadyRunningException : Exception
     {
         public EncodeDecodeTaskAlreadyRunningException()
         {
