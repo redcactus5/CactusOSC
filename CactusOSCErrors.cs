@@ -352,4 +352,21 @@ namespace CactusOSC
 
     }
 
+    class EncodeDecodeTaskAlreadyRunningException : Exception
+    {
+        public EncodeDecodeTaskAlreadyRunningException()
+        {
+        }
+
+        public EncodeDecodeTaskAlreadyRunningException(string message)
+            : base(message)
+        {
+        }
+
+        public EncodeDecodeTaskAlreadyRunningException(string message, Exception innerException)
+            : base(message, innerException)
+        {
+        }
+
+    }
 }
