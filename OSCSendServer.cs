@@ -69,7 +69,7 @@ namespace CactusOSC
 
                     while (messageQueue.Reader.TryRead(out messageCache))
                     {
-                        if (!messageCache.Equals(null))
+                        if (messageCache!=null)
                         {
                             await sendServer.SendAsync(messageCache,shutdownTrigger.Token);
                         }
