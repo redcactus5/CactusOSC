@@ -36,10 +36,9 @@ namespace CactusOSC
         private SemaphoreSlim inFlightCountGate;
         private int CoreCount;
         private const int reserveCores = 4;
+        
         public DecodeEncodeServer(ChannelManager channelKeeper)
         {
-
-
 
 
             this.compiler = new OSCPackageCompiler();
@@ -57,7 +56,7 @@ namespace CactusOSC
             
         }
 
-        public async Task start()
+        public async Task start(bool parallelMode)
         {
             if(this.shutDownTrigger != null)
             {
@@ -84,9 +83,17 @@ namespace CactusOSC
             this.inFlightCount = 0;
             this.inFlightCountGate = new SemaphoreSlim(1);
 
-
-            this.EncoderServer = this.encodingService();
-            this.DecoderServer = this.DecodingService();
+            if (parallelMode)
+            {
+                this.EncoderServer = this.ParallelEncodingService();
+                this.DecoderServer = this.ParallelDecodingService();
+            }
+            else
+            {
+                this.EncoderServer = this.SerialEncodingService();
+                this.DecoderServer = this.SerialDecodingService();
+            }
+            
 
 
 
@@ -232,8 +239,12 @@ namespace CactusOSC
         }
 
 
-        private async Task DecodingService()
+        private async Task ParallelDecodingService()
         {
+            if (this.DecoderServer != null)
+            {
+                throw new EncodeDecodeTaskAlreadyRunningException();
+            }
             ChannelReader<byte[]> reader = this.channelKeeper.getReceivedPackagesChannel();
             ChannelWriter<OSCPackage> writer = this.decodedPackages.Writer;
             byte[][] input=new byte[1024][];
@@ -265,7 +276,6 @@ namespace CactusOSC
 
                     Parallel.For(0, inputIndex, swarmOptions, currentElement =>
                     {
-
                         try
                         {
                             OSCPackage packageCache = this.decodePackage(input[currentElement]);
@@ -274,12 +284,10 @@ namespace CactusOSC
                         catch (InvalidPackageException e)
                         {
                             finishArray[currentElement] = null;
-                            
-
                         }
 
                     });
-
+                    Array.Clear(input, 0, input.Length);
                     for (int i = 0; i < inputIndex; i++)
                     {
                         if (finishArray[i] != null)
@@ -295,6 +303,7 @@ namespace CactusOSC
             }
             catch (OperationCanceledException)
             {
+
             }
             catch (ObjectDisposedException)
             {
@@ -303,9 +312,80 @@ namespace CactusOSC
 
         }
 
-
-        private async Task encodingService()
+        private async Task SerialDecodingService()
         {
+            if (this.DecoderServer != null)
+            {
+                throw new EncodeDecodeTaskAlreadyRunningException();
+            }
+            ChannelReader<byte[]> reader = this.channelKeeper.getReceivedPackagesChannel();
+            ChannelWriter<OSCPackage> writer = this.decodedPackages.Writer;
+            byte[][] input = new byte[1024][];
+            int inputIndex = 0;
+            byte[] inputCache;
+            OSCPackage[] finishArray = new OSCPackage[1024];
+            try
+            {
+                while (!this.shutDownTrigger.IsCancellationRequested)
+                {
+                    await reader.WaitToReadAsync(shutDownTrigger.Token);
+
+
+                    while (reader.TryRead(out inputCache))
+                    {
+                        input[inputIndex] = (inputCache);
+                        inputIndex++;
+                        if (inputIndex >= 1024)
+                        {
+                            break;
+                        }
+
+                    }
+
+                    for(int ProcessesIndex = 0; ProcessesIndex< inputIndex; ProcessesIndex++ ) 
+                    {
+                        try
+                        {
+                            OSCPackage packageCache = this.decodePackage(input[ProcessesIndex]);
+                            finishArray[ProcessesIndex] = packageCache;
+                        }
+                        catch (InvalidPackageException e)
+                        {
+                            finishArray[ProcessesIndex] = null;
+                        }
+
+                    }
+                    Array.Clear(input, 0, input.Length);
+                    for (int i = 0; i < inputIndex; i++)
+                    {
+                        if (finishArray[i] != null)
+                        {
+                            await writer.WriteAsync(finishArray[i], this.shutDownTrigger.Token);
+                        }
+
+                    }
+                    inputIndex = 0;
+                    Array.Clear(finishArray, 0, finishArray.Length);
+
+                }
+            }
+            catch (OperationCanceledException)
+            {
+
+            }
+            catch (ObjectDisposedException)
+            {
+
+            }
+
+        }
+
+        private async Task ParallelEncodingService()
+        {
+            if (this.EncoderServer != null)
+            {
+                throw new EncodeDecodeTaskAlreadyRunningException();
+            }
             ChannelReader<OSCPackage> reader = packagesToEncode.Reader;
             OSCPackage[] input = new OSCPackage[1024];
             int inputIndex = 0;
@@ -338,7 +418,7 @@ namespace CactusOSC
                     {
                         finishArray[currentElement] = (this.encodePackage(input[currentElement]));
                     });
-
+                    Array.Clear(input, 0, input.Length);
                     for (int i = 0; i < inputIndex; i++)
                     {
                         await this.channelKeeper.transferPackageToSend(finishArray[i]);
@@ -361,11 +441,75 @@ namespace CactusOSC
             }
             catch (OperationCanceledException)
             {
+
             }
             catch (ObjectDisposedException){
 
             } 
         }
 
+        private async Task SerialEncodingService()
+        {
+            if(this.EncoderServer != null)
+            {
+                throw new EncodeDecodeTaskAlreadyRunningException();
+            }
+            ChannelReader<OSCPackage> reader = packagesToEncode.Reader;
+            OSCPackage[] input = new OSCPackage[1024];
+            int inputIndex = 0;
+            OSCPackage inputCache;
+            byte[][] finishArray = new byte[1024][];
+            try
+            {
+                while (!this.shutDownTrigger.IsCancellationRequested)
+                {
+                    await reader.WaitToReadAsync(shutDownTrigger.Token);
+                    await encodeGate.WaitAsync(this.shutDownTrigger.Token);
+                    encodeGate.Release();
+                    while (reader.TryRead(out inputCache))
+                    {
+                        input[inputIndex] = (inputCache);
+                        inputIndex++;
+                        if (inputIndex >= 1024)
+                        {
+                            break;
+                        }
+
+                    }
+
+                    for(int ProcessIndex=0; ProcessIndex<inputIndex;  ProcessIndex++) 
+                    {
+                        finishArray[ProcessIndex] = (this.encodePackage(input[ProcessIndex]));
+                    }
+                    Array.Clear(input, 0, input.Length);
+                    for (int i = 0; i < inputIndex; i++)
+                    {
+                        await this.channelKeeper.transferPackageToSend(finishArray[i]);
+                    }
+                    Array.Clear(finishArray, 0, finishArray.Length);
+                    await this.inFlightCountGate.WaitAsync(this.shutDownTrigger.Token);
+                    if ((this.encodeFinishedTcs != null) && (!this.encodeFinishedTcs.Task.IsCompleted))
+                    {
+                        this.inFlightCount -= inputIndex;
+                        if (this.inFlightCount == 0)
+                        {
+                            this.encodeFinishedTcs.SetResult(true);
+
+                        }
+                    }
+                    this.inFlightCountGate.Release();
+                    inputIndex = 0;
+                }
+
+            }
+            catch (OperationCanceledException)
+            {
+
+            }
+            catch (ObjectDisposedException)
+            {
+
+            }
+        }
     }
 }
