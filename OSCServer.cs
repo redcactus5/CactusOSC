@@ -259,7 +259,7 @@ namespace CactusOSC
         public void Dispose()
         {
             
-            
+            this.started = true;
             this.ShutDown();
         }
         /// <summary>
@@ -408,11 +408,7 @@ namespace CactusOSC
                 }
                 this.channelMan = null;
 
-                if (shutdownTrigger != null)
-                {
-                    shutdownTrigger.Dispose();
-                    shutdownTrigger = null;
-                }
+                
                 this.started = false;
 
             }
