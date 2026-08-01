@@ -395,7 +395,7 @@ namespace CactusOSC
         {
             
             this.networkTimeWhole = (uint)(rawNetworkTimeValue >> 32);
-            this.networkTimeFraction = (uint)(networkTimeWhole & ((ulong)0xFFFFFFFF));
+            this.networkTimeFraction = (uint)(rawNetworkTimeValue & ((ulong)0xFFFFFFFF));
         }
 
         public ulong GetRawNetworkTimeValue()
@@ -641,7 +641,7 @@ namespace CactusOSC
             this.a = (byte)(rgba & 0xff);
         }
 
-        public int GetColor(int rgba)
+        public int GetColor()
         {
             return (((this.r << 24) & (0xff << 24)) | ((this.g << 16) & (0xff << 16)) | ((this.b << 8) & (0xff << 8)) | ((this.a) & 0xff));
         }
