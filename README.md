@@ -49,7 +49,7 @@ namespace demo
         public void testOSCReceive()
         {
             OSCServer testServer=new OSCServer();
-            testServer.StartOSCServer(receivePort, receiveAddress, receivePort, OSCServerAddress);
+            testServer.StartOSCServer(receivePort, receiveAddress, receivePort, OSCServerAddress,true, true,50000, OSCQueueDropMode.DropOldest,OSCQueueDropMode.Wait);
             RawOSCConverter testConverter= new RawOSCConverter();
             OSCMessage demoMessage = new OSCMessage("/demo");
 
