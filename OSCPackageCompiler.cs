@@ -476,10 +476,10 @@ namespace CactusOSC
             written += 1;
 
 
-            int paddingBytes = calculateOSCStringOverflowSize(written);
-            target.writeData(this.paddingBytes[paddingBytes]);
+            int stringPaddingBytes = calculateOSCStringOverflowSize(written);
+            target.writeData(this.paddingBytes[stringPaddingBytes]);
 
-            return written+paddingBytes;
+            return written+stringPaddingBytes;
         }
         
         

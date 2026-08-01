@@ -260,11 +260,7 @@ namespace CactusOSC
         public void Dispose()
         {
             
-            if(shutdownTrigger!= null)
-            {
-                shutdownTrigger.Dispose();
-                shutdownTrigger = null;
-            }
+            
             this.ShutDown();
         }
         /// <summary>
@@ -385,6 +381,11 @@ namespace CactusOSC
             if (this.started)
             {
                 shutdownTrigger.Cancel();
+                if (shutdownTrigger != null)
+                {
+                    shutdownTrigger.Dispose();
+                    shutdownTrigger = null;
+                }
 
                 if (this.decoderEncoder != null)
                 {
