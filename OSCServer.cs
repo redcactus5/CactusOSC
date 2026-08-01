@@ -363,6 +363,7 @@ namespace CactusOSC
                 }
                 catch(Exception error)
                 {
+                    this.started = true;
                     this.ShutDown();
                 }
                 
