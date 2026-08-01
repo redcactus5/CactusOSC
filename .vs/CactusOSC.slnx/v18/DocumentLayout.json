@@ -7,6 +7,10 @@
       "RelativeMoniker": "D:0:0:{EE3DCBA5-CD2E-80DA-2FBF-08F57AB92E7D}|CactusOSC.csproj|solutionrelative:cactusosc.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
     },
     {
+      "AbsoluteMoniker": "D:0:0:{EE3DCBA5-CD2E-80DA-2FBF-08F57AB92E7D}|CactusOSC.csproj|c:\\users\\roboc\\desktop\\misc\\programming\\c#\\cactusosc\\osctypes.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{EE3DCBA5-CD2E-80DA-2FBF-08F57AB92E7D}|CactusOSC.csproj|solutionrelative:osctypes.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{EE3DCBA5-CD2E-80DA-2FBF-08F57AB92E7D}|CactusOSC.csproj|c:\\users\\roboc\\desktop\\misc\\programming\\c#\\cactusosc\\readme.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}",
       "RelativeMoniker": "D:0:0:{EE3DCBA5-CD2E-80DA-2FBF-08F57AB92E7D}|CactusOSC.csproj|solutionrelative:readme.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}"
     },
@@ -17,10 +21,6 @@
     {
       "AbsoluteMoniker": "D:0:0:{EE3DCBA5-CD2E-80DA-2FBF-08F57AB92E7D}|CactusOSC.csproj|c:\\users\\roboc\\desktop\\misc\\programming\\c#\\cactusosc\\oscreceiveserver.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{EE3DCBA5-CD2E-80DA-2FBF-08F57AB92E7D}|CactusOSC.csproj|solutionrelative:oscreceiveserver.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{EE3DCBA5-CD2E-80DA-2FBF-08F57AB92E7D}|CactusOSC.csproj|c:\\users\\roboc\\desktop\\misc\\programming\\c#\\cactusosc\\osctypes.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{EE3DCBA5-CD2E-80DA-2FBF-08F57AB92E7D}|CactusOSC.csproj|solutionrelative:osctypes.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
   ],
   "DocumentGroupContainers": [
@@ -33,8 +33,25 @@
           "SelectedChildIndex": 1,
           "Children": [
             {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{aa2115a1-9712-457b-9047-dbb71ca2cdd2}"
+            },
+            {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 0,
+              "Title": "CactusOSC",
+              "DocumentMoniker": "C:\\Users\\roboc\\Desktop\\misc\\programming\\c#\\CactusOSC\\CactusOSC.csproj",
+              "RelativeDocumentMoniker": "CactusOSC.csproj",
+              "ToolTip": "C:\\Users\\roboc\\Desktop\\misc\\programming\\c#\\CactusOSC\\CactusOSC.csproj",
+              "RelativeToolTip": "CactusOSC.csproj",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAQAAAAQAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
+              "WhenOpened": "2026-08-01T06:42:00.402Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
               "Title": "README.md",
               "DocumentMoniker": "C:\\Users\\roboc\\Desktop\\misc\\programming\\c#\\CactusOSC\\README.md",
               "RelativeDocumentMoniker": "README.md",
@@ -42,25 +59,11 @@
               "RelativeToolTip": "README.md",
               "ViewState": "AgIAACQAAAAAAAAAAAAAADMAAACkAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
-              "WhenOpened": "2026-08-01T06:28:20.609Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-08-01T06:28:20.609Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
-              "Title": "CactusOSC.csproj",
-              "DocumentMoniker": "C:\\Users\\roboc\\Desktop\\misc\\programming\\c#\\CactusOSC\\CactusOSC.csproj",
-              "RelativeDocumentMoniker": "CactusOSC.csproj",
-              "ToolTip": "C:\\Users\\roboc\\Desktop\\misc\\programming\\c#\\CactusOSC\\CactusOSC.csproj",
-              "RelativeToolTip": "CactusOSC.csproj",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAQAAAAQAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
-              "WhenOpened": "2026-08-01T06:20:38.906Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 3,
               "Title": "OSCServer.cs",
               "DocumentMoniker": "C:\\Users\\roboc\\Desktop\\misc\\programming\\c#\\CactusOSC\\OSCServer.cs",
               "RelativeDocumentMoniker": "OSCServer.cs",
@@ -68,24 +71,24 @@
               "RelativeToolTip": "OSCServer.cs",
               "ViewState": "AgIAAFQBAAAAAAAAAAAqwG0BAAAoAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-07-17T02:55:23.588Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-07-17T02:55:23.588Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 4,
+              "DocumentIndex": 1,
               "Title": "OSCTypes.cs",
               "DocumentMoniker": "C:\\Users\\roboc\\Desktop\\misc\\programming\\c#\\CactusOSC\\OSCTypes.cs",
               "RelativeDocumentMoniker": "OSCTypes.cs",
               "ToolTip": "C:\\Users\\roboc\\Desktop\\misc\\programming\\c#\\CactusOSC\\OSCTypes.cs",
               "RelativeToolTip": "OSCTypes.cs",
-              "ViewState": "AgIAAGcAAAAAAAAAAAAhwHcAAAAOAAAAAAAAAA==",
+              "ViewState": "AgIAAHsBAAAAAAAAAAAUwI0BAABBAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-07-17T02:32:32.068Z"
+              "WhenOpened": "2026-07-17T02:32:32.068Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 3,
+              "DocumentIndex": 4,
               "Title": "OSCReceiveServer.cs",
               "DocumentMoniker": "C:\\Users\\roboc\\Desktop\\misc\\programming\\c#\\CactusOSC\\OSCReceiveServer.cs",
               "RelativeDocumentMoniker": "OSCReceiveServer.cs",
