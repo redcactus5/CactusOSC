@@ -73,7 +73,7 @@ namespace CactusOSC
         /// the constructor of abstract class OSCValue
         /// </summary>
         /// <param name="type"></param>
-        public OSCValue(OSCValueType type)
+        internal OSCValue(OSCValueType type)
         {
             this.size = -1;
             this.oscType = type;
