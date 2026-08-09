@@ -82,22 +82,11 @@ namespace CactusOSC
         private bool isBundle(ReadOnlySpan<byte> bytes)
         {
             if (bytes.Length >= bundleTagLength) {
-                bool match = true;
-                for (int i = 0; i < bundleTagLength; i++)
-                {
-                    if (bytes[i] != this.bundleTag[i])
-                    {
-                        match = false;
-                        break;
-                    }
-                }
-                return match;
+                return bytes.StartsWith(bundleTag);
+                
             }
-            
-            
             return false;
-            
-            
+
         }
 
         //self explanitory checks if a read only span of bytes ahas a starting message tag
@@ -105,16 +94,7 @@ namespace CactusOSC
         {
             if (bytes.Length >= this.messageTag.Length)
             {
-                bool match = true;
-                for (int i = 0; i < this.messageTag.Length; i++)
-                {
-                    if (bytes[i] != this.messageTag[i])
-                    {
-                        match = false;
-                        break;
-                    }
-                }
-                return match;
+                return bytes.StartsWith(messageTag);
             }
             return false;
         }
