@@ -220,6 +220,14 @@ namespace CactusOSC
                         throw new IncompleteOSCDataException();
                     }
                     int padding = (OSCWordSize - (length % OSCWordSize)) % OSCWordSize;
+                    int paddingCheckOffset = length + 4 + startIndex;
+                    for (int  i = paddingCheckOffset; i < paddingCheckOffset+ padding; i++)
+                    {
+                        if(data[i] != 0)
+                        {
+                            throw new InvalidOSCDataException();
+                        }
+                    }
                     return new OSCvalueConversionReturn(length +padding+4,new OSCBlob(data.Slice(startIndex + 4, length).ToArray()));
 
                 case 'h':
@@ -658,7 +666,7 @@ namespace CactusOSC
             }
             for(int i = 0; i < stringReturn1.value.Length; i++)
             {
-                if (this.invalidMethodChars[stringReturn1.value[i]] == false)
+                if ((stringReturn1.value[i]>255) ||( this.invalidMethodChars[stringReturn1.value[i]] == false))
                 {
                     throw new InvalidOSCAddressException();
                 }
