@@ -191,16 +191,20 @@ namespace CactusOSC
         /// <returns>string</returns>
         public override string ToString()
         {
+
             StringBuilder stringedVersion = new StringBuilder();
             stringedVersion.Append(this.address);
-            stringedVersion.Append(" ");
-            for (int index = 0; index < this.values.Length - 1; index++)
+            if (this.values.Count() > 0)
             {
-                stringedVersion.Append(this.values[index].ToString());
-                stringedVersion.Append(", ");
+                stringedVersion.Append(" ");
+                for (int index = 0; index < this.values.Length - 1; index++)
+                {
+                    stringedVersion.Append(this.values[index].ToString());
+                    stringedVersion.Append(", ");
 
+                }
+                stringedVersion.Append(this.values[this.values.Length - 1].ToString());
             }
-            stringedVersion.Append(this.values[this.values.Length - 1].ToString());
             return stringedVersion.ToString();
         }
         /// <summary>
@@ -297,14 +301,14 @@ namespace CactusOSC
                         seenPackages.Add(new HashSet<OSCPackage>());
                         depth++;
                         subIndexes.Push(index);
-                        index = 0;
+                        
 
                         childBundles.Push(currentSubBundle);
 
 
                         currentSubBundle = ((OSCBundle)currentSubBundle.elements[index].GetRawContents());
-                            
-                        
+                        index = 0;
+
                         for (int i = 0; i < depth; i++)
                         {
                             sb.Append("    ");
@@ -513,7 +517,7 @@ namespace CactusOSC
             return this.contents;
         }
 
-        public string ToString()
+        public override string ToString()
         {
             switch (this.contents.GetPackageType())
             {
