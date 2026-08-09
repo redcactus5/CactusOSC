@@ -104,7 +104,7 @@ namespace CactusOSC
             openBracketBytes = Encoding.UTF8.GetBytes("[");
             closeBracketBytes = Encoding.UTF8.GetBytes("]");
             commaBytes = Encoding.UTF8.GetBytes(",");
-            bundleIdent= this.generateOSCString("#bundle");
+            bundleIdent= this.GenerateOSCString("#bundle");
 
         }
 
@@ -272,6 +272,7 @@ namespace CactusOSC
                     BinaryPrimitives.WriteInt32BigEndian(target.getWriteSpan4(), ((OSCBlob)value).GetRawValue().Length);
                     
                     target.writeData(((OSCBlob)value).GetRawValue());
+                    target.writeData(this.paddingBytes[CalculateOSCStringOverflowSize(((OSCBlob)value).GetRawValue().Length)]);
                     break;
                 case OSCValueType.OSCLong:
                     BinaryPrimitives.WriteInt64BigEndian(target.getWriteSpan8(), ((OSCLong)value).GetValue());
@@ -412,12 +413,12 @@ namespace CactusOSC
                 }
             }
             typeStringSize+=target.writeByte(this.nullByte);
-            int padding = this.calculateOSCStringOverflowSize(typeStringSize);
+            int padding = this.CalculateOSCStringOverflowSize(typeStringSize);
             target.writeData(this.paddingBytes[padding]);
             return target;
         }
 
-        private int calculateOSCStringSize(int textLength)
+        private int CalculateOSCStringSize(int textLength)
         {
             int tempsize = textLength + 1;
             if (tempsize > 0)
@@ -438,7 +439,7 @@ namespace CactusOSC
             return tempsize;
         }
 
-        private int calculateOSCStringOverflowSize(int textByteCount)
+        private int CalculateOSCStringOverflowSize(int textByteCount)
         {
             int tempsize = 0;
             int overflow = textByteCount % 4;
@@ -452,10 +453,10 @@ namespace CactusOSC
             return tempsize;
         }
 
-        private byte[] generateOSCString(string text)
+        private byte[] GenerateOSCString(string text)
         {
             int textSize = Encoding.UTF8.GetByteCount(text);
-            byte[] bytes = new byte[this.calculateOSCStringSize(textSize)];
+            byte[] bytes = new byte[this.CalculateOSCStringSize(textSize)];
             //ensure the padding and null byte is cleared
             Array.Clear(bytes,textSize,bytes.Length-textSize);
             //fast copy
@@ -466,7 +467,7 @@ namespace CactusOSC
         private int GenerateAndWriteOSCString(string text, RawOSCPackage target)
         {
             int byteCount = Encoding.UTF8.GetByteCount(text);
-            int totalSize = this.calculateOSCStringSize(byteCount);
+            int totalSize = this.CalculateOSCStringSize(byteCount);
 
             
             int written = Encoding.UTF8.GetBytes(text,0,text.Length,target.getRawData(),target.getHead());
@@ -475,7 +476,7 @@ namespace CactusOSC
             written += 1;
 
 
-            int stringPaddingBytes = calculateOSCStringOverflowSize(written);
+            int stringPaddingBytes = CalculateOSCStringOverflowSize(written);
             target.writeData(this.paddingBytes[stringPaddingBytes]);
 
             return written+stringPaddingBytes;
