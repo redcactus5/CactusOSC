@@ -12,7 +12,8 @@ You should have received a copy of the GNU Lesser General Public License along w
 
 
 using System.Text;
-
+using System;
+using System.Collections.Generic;
 namespace CactusOSC
 {
     public enum OSCValueType
@@ -170,7 +171,7 @@ namespace CactusOSC
         /// <returns>string</returns>
         public override string ToString()
         {
-            return this.value.ToString();
+            return this.value;
         }
         /// <summary>
         /// creates a copy of an OSCString Object
@@ -554,7 +555,7 @@ namespace CactusOSC
         /// <returns>string</returns>
         public override string ToString()
         {
-            return this.value.ToString();
+            return this.value;
         }
         /// <summary>
         /// creates a copy of an OSCNonstandardString
@@ -762,7 +763,7 @@ namespace CactusOSC
 
         public int GetMessage()
         {
-            return (((this.port << 24) & (0xff << 24)) | ((this.status << 16) & (0xff << 16)) | ((this.data1 << 8) & (0xff << 8)) | ((this.data2) & 0xff)); ;
+            return (((this.port << 24) & (0xff << 24)) | ((this.status << 16) & (0xff << 16)) | ((this.data1 << 8) & (0xff << 8)) | ((this.data2) & 0xff));
         }
     }
 
@@ -823,7 +824,7 @@ namespace CactusOSC
         /// <returns>int</returns>
         public int GetValue()
         {
-            return (((this.port << 24) & (0xff << 24)) | ((this.status << 16) & (0xff << 16)) | ((this.data1 << 8) & (0xff << 8)) | ((this.data2) & 0xff)); ;
+            return (((this.port << 24) & (0xff << 24)) | ((this.status << 16) & (0xff << 16)) | ((this.data1 << 8) & (0xff << 8)) | ((this.data2) & 0xff));
         }
         /// <summary>
         /// gets the OSCMidiValue internal Value of an OSCColor
@@ -1079,16 +1080,21 @@ namespace CactusOSC
             Stack<int> indexStack = new Stack<int>();
 
             int depth = 0;
-
+            bool setEnd=false;
             while ((currentIndex < currentArray.Length) || (depth > 0))
             {
                 if (currentArray.Length <= currentIndex)
                 {
+                    
                     stringEdition.Append("]");
                     currentArray = subListStack.Pop();
                     currentIndex = indexStack.Pop() + 1;
                     seenLists.RemoveAt(depth);
                     depth--;
+                    if (currentArray.Length > currentIndex)
+                    {
+                        stringEdition.Append(", ");
+                    }
                 }
                 else
                 {
@@ -1112,27 +1118,27 @@ namespace CactusOSC
                         currentArray = ((OSCArray)currentArray[currentIndex]).GetRawValue();
                         currentIndex = 0;
                         depth++;
+                        
                         stringEdition.Append("[");
 
                     }
                     else
                     {
-                        if (data.Length > 0)
+                        
+                        stringEdition.Append(currentArray[currentIndex].ToString());
+                        if (currentIndex + 1 < currentArray.Length)
                         {
-                            stringEdition.Append(currentArray[currentIndex].ToString());
-                            if (currentIndex + 1 < currentArray.Length)
-                            {
-                                stringEdition.Append(", ");
-                            }
-                            currentIndex++;
+                            stringEdition.Append(", ");
                         }
+                        currentIndex++;
+                        
 
 
                     }
                 }
 
             }
-
+            stringEdition.Append("]");
 
             return stringEdition.ToString();
         }
