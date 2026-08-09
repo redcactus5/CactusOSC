@@ -113,8 +113,8 @@ namespace CactusOSC
         {
 
             this.address = address;
-            this.values = values;
-            int adressSize = this.CalculateOSCStringSize(Encoding.UTF8.GetByteCount(address) + 1);
+            this.values = (OSCValue[])values.Clone();
+            int addressSize = this.CalculateOSCStringSize(Encoding.UTF8.GetByteCount(address) + 1);
             //account for the comma that denotes its start and the null terminator
             int typeStringSize = 2;
             //calculate the data size and typestring size
@@ -127,7 +127,7 @@ namespace CactusOSC
             //calculate the final size
 
             typeStringSize = this.CalculateOSCStringSize(typeStringSize);
-            this.SetSize(adressSize + typeStringSize + dataSize);
+            this.SetSize(addressSize + typeStringSize + dataSize);
 
         }
         /// <summary>
@@ -266,6 +266,7 @@ namespace CactusOSC
 
                 if ((index >= currentSubBundle.GetRawElements().Length) && (depth > 0))
                 {
+                    seenPackages.RemoveAt(depth);
                     depth--;
                     index = subIndexes.Pop() + 1;
                     currentSubBundle = childBundles.Pop();
@@ -467,7 +468,7 @@ namespace CactusOSC
         /// get the parsed timeTagValue of the Bundle
         /// </summary>
         /// <returns>OSCTimeTagValue</returns>
-        public OSCTimeTagValue getParsedTimeTag()
+        public OSCTimeTagValue GetParsedTimeTag()
         {
             return new OSCTimeTagValue(this.timeTag);
         }
