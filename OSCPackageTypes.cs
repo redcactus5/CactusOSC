@@ -194,7 +194,7 @@ namespace CactusOSC
 
             StringBuilder stringedVersion = new StringBuilder();
             stringedVersion.Append(this.address);
-            if (this.values.Count() > 0)
+            if (this.values.Length > 0)
             {
                 stringedVersion.Append(" ");
                 for (int index = 0; index < this.values.Length - 1; index++)
