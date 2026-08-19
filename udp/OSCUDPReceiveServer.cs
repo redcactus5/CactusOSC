@@ -8,6 +8,7 @@ CactusOSC is distributed in the hope that it will be useful, but WITHOUT ANY WAR
 
 You should have received a copy of the GNU Lesser General Public License along with CactusOSC. If not, see <https://www.gnu.org/licenses/>. 
 */
+using System.Net;
 using System.Net.Sockets;
 
 using System.Threading.Channels;
@@ -15,17 +16,17 @@ using System.Threading.Channels;
 namespace CactusOSC
 {
 
-    internal class OSCReceiveServer:IDisposable
+    internal class OSCUDPReceiveServer:IDisposable
     {
         UdpClient receiveServer;
-        private string address;
+        private IPAddress address;
         private ushort port;
         private Channel<byte[]> messagePool;
         private CancellationTokenSource shutdownTrigger;
         private Task receiveTask;
         private ChannelManager converterBridge;
 
-        public OSCReceiveServer(ChannelManager converterBridge, string address, ushort port)
+        public OSCUDPReceiveServer(ChannelManager converterBridge, IPAddress address, ushort port)
         {
             this.address = address;
             this.port = port;
@@ -41,13 +42,13 @@ namespace CactusOSC
             {
                 receiveServer.Close();
             }
-            if (this.address == null)
+            if ((this.address == null)||(this.address==IPAddress.Any))
             {
                 this.receiveServer = new UdpClient(this.port);
             }
             else
             {
-                this.receiveServer = new UdpClient(this.address, this.port);
+                this.receiveServer = new UdpClient(this.address.ToString(), this.port);
             }
             
             

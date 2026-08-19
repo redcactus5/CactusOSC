@@ -8,21 +8,25 @@ CactusOSC is distributed in the hope that it will be useful, but WITHOUT ANY WAR
 
 You should have received a copy of the GNU Lesser General Public License along with CactusOSC. If not, see <https://www.gnu.org/licenses/>. 
 */
+
+
+using System.Net;
+
 namespace CactusOSC
 {
     /// <summary>
     /// a prebuilt, ready made udp server for sending and receiving OSC packages
     /// </summary>
-    public sealed class OSCServer : IDisposable
+    public sealed class OSCTCPServer : IDisposable
     {
         private ChannelManager channelMan;
         private DecodeEncodeServer decoderEncoder;
-        private OSCReceiveServer OSCReceiver;
-        private OSCSendServer OSCSender;
-        private string sendIP;
+        private OSCUDPReceiveServer OSCReceiver;
+        private OSCUDPSendServer OSCSender;
+        private IPAddress sendIP;
         private ushort sendPort;
         private ushort receivePort;
-        private string receiveIP;
+        private IPAddress receiveIP;
         private bool started;
         private int channelCapacity;
         private bool boundedMode;
@@ -31,7 +35,7 @@ namespace CactusOSC
         /// <summary>
         /// create a new osc server instance
         /// </summary>
-        public OSCServer()
+        public OSCTCPServer()
         {
             started = false;
 
@@ -315,7 +319,7 @@ namespace CactusOSC
         /// <param name="boundedQueueSize"></param>
         /// <param name="ReceiveDropMode"></param>
         /// <exception cref="ServerAlreadyStartedException"></exception>
-        public void StartOSCServer(ushort receivePort, string receiveIP, ushort sendPort, string sendIP, bool parallelMode=true, bool unboundedQueueMode=true, int boundedQueueSize=50000,OSCQueueDropMode ReceiveDropMode=OSCQueueDropMode.DropNewest,OSCQueueDropMode SendDropMode=OSCQueueDropMode.Wait)
+        public void StartOSCServer(ushort receivePort, IPAddress receiveIP, ushort sendPort, IPAddress sendIP, bool parallelMode=true, bool unboundedQueueMode=true, int boundedQueueSize=50000,OSCQueueDropMode ReceiveDropMode=OSCQueueDropMode.DropNewest,OSCQueueDropMode SendDropMode=OSCQueueDropMode.Wait)
         {
             if (!this.started)
             {
@@ -344,12 +348,12 @@ namespace CactusOSC
                     {
                         this.OSCReceiver.shutdownServer();
                     }
-                    this.OSCReceiver = new OSCReceiveServer(this.channelMan, this.receiveIP, this.receivePort);
+                    this.OSCReceiver = new OSCUDPReceiveServer(this.channelMan, this.receiveIP, this.receivePort);
                     if (this.OSCSender != null)
                     {
                         this.OSCSender.shutdownServer();
                     }
-                    this.OSCSender = new OSCSendServer(this.channelMan, this.sendIP, this.sendPort);
+                    this.OSCSender = new OSCUDPSendServer(this.channelMan, this.sendIP, this.sendPort);
 
                     this.decoderEncoder.start(parallelMode).GetAwaiter().GetResult();
                     this.OSCSender.start();

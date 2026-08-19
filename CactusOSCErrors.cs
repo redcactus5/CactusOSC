@@ -29,6 +29,23 @@ namespace CactusOSC
         {
         }
     }
+
+    public class OSCServerConnectionTimeoutException : Exception
+    {
+        public OSCServerConnectionTimeoutException()
+        {
+        }
+
+        public OSCServerConnectionTimeoutException(string message)
+            : base(message)
+        {
+        }
+
+        public OSCServerConnectionTimeoutException(string message, Exception innerException)
+            : base(message, innerException)
+        {
+        }
+    } 
     public class ServerNotStartedException: InvalidOperationException
     {
         public ServerNotStartedException()

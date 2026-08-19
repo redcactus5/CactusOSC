@@ -11,13 +11,14 @@ You should have received a copy of the GNU Lesser General Public License along w
 using System.Net.Sockets;
 
 using System.Threading.Channels;
+using System.Net;
 
 namespace CactusOSC
 {
-    internal class OSCSendServer:IDisposable
+    internal class OSCUDPSendServer:IDisposable
     {
         UdpClient sendServer;
-        private string address;
+        private IPAddress address;
         private ushort port;
         private Channel<byte[]> messageQueue;
         private CancellationTokenSource shutdownTrigger;
@@ -27,7 +28,7 @@ namespace CactusOSC
         private TaskCompletionSource<bool> sendFinished;
     
 
-        public OSCSendServer(ChannelManager converterBridge, string address, ushort port)
+        public OSCUDPSendServer(ChannelManager converterBridge, IPAddress address, ushort port)
         {
 
             this.address = address;
@@ -43,7 +44,7 @@ namespace CactusOSC
             {
                 sendServer.Close();
             }
-            sendServer = new UdpClient(this.address, this.port);
+            sendServer = new UdpClient(this.address.ToString(), this.port);
             sendFinished= new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
             sendTask = Task.Run(SendOSC);
         }
