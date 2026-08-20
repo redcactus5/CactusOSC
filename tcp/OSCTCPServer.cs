@@ -436,8 +436,8 @@ namespace CactusOSC
                 }
                 catch(Exception error)
                 {
-                    
-                    this.internalShutDown(error);
+
+                    this.internalShutDown(new ServerStartupFailedException("Server Startup Failed!", error));
                 }
                 
             }
@@ -531,7 +531,7 @@ namespace CactusOSC
                 catch (Exception error)
                 {
                    
-                    this.internalShutDown(error);
+                    this.internalShutDown(new ServerStartupFailedException("Server Startup Failed!",error));
                 }
 
             }
@@ -603,7 +603,7 @@ namespace CactusOSC
             shuttingDown = false; 
             if (error != null)
             {
-                throw new ServerStartupFailedException("OSC TCP Server error!", error);
+                throw error;
             }
             
         }

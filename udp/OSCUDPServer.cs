@@ -393,8 +393,8 @@ namespace CactusOSC
                 }
                 catch(Exception error)
                 {
-                    
-                    this.internalShutDown(error);
+
+                    this.internalShutDown(new ServerStartupFailedException("Server Startup Failed!", error));
                 }
                 
             }
