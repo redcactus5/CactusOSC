@@ -4,7 +4,7 @@ using System.Net.Sockets;
 using System.Net;
 using System.Text;
 using System.Threading;
-using System.Security.AccessControl;
+
 
 
 namespace CactusOSC
@@ -73,8 +73,15 @@ namespace CactusOSC
                     else
                     {
                         this.Connection = clientTask.Result;
-                        endTimerEarly.Cancel();
-                        await this.ConnectionTimerTask;
+                        try
+                        {
+                            endTimerEarly.Cancel();
+                            await ConnectionTimerTask;
+                        }
+                        catch (OperationCanceledException)
+                        {
+
+                        }
                         this.ConnectionTimerTask = null;
 
                     }
@@ -123,9 +130,15 @@ namespace CactusOSC
                     }
                     else
                     {
+                        try 
+                        {
+                            endTimerEarly.Cancel();
+                            await ConnectionTimerTask;
+                        } catch (OperationCanceledException) 
+                        { 
 
-                        endTimerEarly.Cancel();
-                        await ConnectionTimerTask;
+                        }
+                        
                         ConnectionTimerTask = null;
 
                     }
@@ -164,8 +177,7 @@ namespace CactusOSC
                 {
                     this.ShutdownTrigger.Cancel();
                 }
-                this.ShutdownTrigger.Dispose();
-                this.ShutdownTrigger = null;
+               
             }
             if (this.endTimerEarly != null)
             {
@@ -173,8 +185,7 @@ namespace CactusOSC
                 {
                     this.endTimerEarly.Cancel();
                 }
-                this.endTimerEarly.Dispose();
-                this.endTimerEarly = null;
+                
             }
             if (this.linkedTokens != null)
             {
@@ -229,6 +240,18 @@ namespace CactusOSC
                 }
                 
                 this.ConnectionTimerTask = null;
+            }
+
+            if(this.ShutdownTrigger != null)
+            {
+                this.ShutdownTrigger.Dispose();
+                this.ShutdownTrigger = null;
+            }
+
+            if(this.endTimerEarly != null)
+            {
+                this.endTimerEarly.Dispose();
+                this.endTimerEarly = null;
             }
         }
 

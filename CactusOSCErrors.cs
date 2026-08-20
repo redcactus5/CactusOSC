@@ -30,6 +30,39 @@ namespace CactusOSC
         }
     }
 
+    public class ServerShuttingDownException : Exception
+    {
+        public ServerShuttingDownException()
+        {
+        }
+
+        public ServerShuttingDownException(string message)
+            : base(message)
+        {
+        }
+
+        public ServerShuttingDownException(string message, Exception innerException)
+            : base(message, innerException)
+        {
+        }
+    }
+    public class ServerStartupFailedException : Exception
+    {
+        public ServerStartupFailedException()
+        {
+        }
+
+        public ServerStartupFailedException(string message)
+            : base(message)
+        {
+        }
+
+        public ServerStartupFailedException(string message, Exception innerException)
+            : base(message, innerException)
+        {
+        }
+    }
+
     public class OSCServerConnectionTimeoutException : Exception
     {
         public OSCServerConnectionTimeoutException()

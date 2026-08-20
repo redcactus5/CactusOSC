@@ -25,6 +25,8 @@ namespace CactusOSC
         private CancellationTokenSource shutdownTrigger;
         private Task receiveTask;
         private ChannelManager converterBridge;
+        private CancellationTokenSource linkedToken;
+        private ErrorAndShutdownCarrier carreir;
 
         public OSCUDPReceiveServer(ChannelManager converterBridge, IPAddress address, ushort port)
         {
@@ -35,9 +37,11 @@ namespace CactusOSC
 
         }
 
-        public void start()
+        public void start(ErrorAndShutdownCarrier carrier)
         {
             this.shutdownTrigger = new CancellationTokenSource();
+            this.linkedToken = CancellationTokenSource.CreateLinkedTokenSource(shutdownTrigger.Token, carrier.getTokenSource().Token);
+            this.carreir = carrier;
             if (this.receiveServer != null)
             {
                 receiveServer.Close();
@@ -52,7 +56,7 @@ namespace CactusOSC
             }
             
             
-            this.receiveTask = Task.Run(receiveOSC);
+            this.receiveTask = receiveOSC();
         }
         
         private async Task receiveOSC()
@@ -93,27 +97,50 @@ namespace CactusOSC
             {
                 throw new ServerNotStartedException();
             }
-            this.shutdownTrigger.Cancel();
-            this.receiveTask.GetAwaiter().GetResult();
-            this.receiveTask = null;
-            this.receiveServer.Close();
-            this.Dispose();
-        }
 
-        public void Dispose()
-        {
-            ;
+            if (this.receiveTask != null)
+            {
+                this.receiveTask.GetAwaiter().GetResult();
+                this.receiveTask = null;
+            }
+            
+            
+            if (this.shutdownTrigger != null)
+            {
+                if (!this.shutdownTrigger.IsCancellationRequested)
+                {
+                    this.shutdownTrigger.Cancel();
+                }
+                
+            }
+            if (this.receiveServer != null)
+            {
+                this.receiveServer.Close();
+                this.receiveServer.Dispose();
+                this.receiveServer = null;
+            }
             if (this.shutdownTrigger != null)
             {
                 this.shutdownTrigger.Dispose();
                 this.shutdownTrigger = null;
             }
-            if(this.receiveServer!= null)
+            if (linkedToken != null)
             {
+                if (!linkedToken.IsCancellationRequested)
+                {
+                    linkedToken.Cancel();
 
-                this.receiveServer.Dispose();
-                this.receiveServer = null;
+                }
+                linkedToken.Dispose();
+                linkedToken = null;
             }
+        }
+
+        public void Dispose()
+        {
+            
+            
+            this.shutdownServer();
             
         }
     }

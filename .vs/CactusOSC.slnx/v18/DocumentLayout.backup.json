@@ -3,12 +3,36 @@
   "WorkspaceRootPath": "C:\\Users\\roboc\\Desktop\\misc\\programming\\c#\\CactusOSC\\",
   "Documents": [
     {
+      "AbsoluteMoniker": "D:0:0:{EE3DCBA5-CD2E-80DA-2FBF-08F57AB92E7D}|CactusOSC.csproj|c:\\users\\roboc\\desktop\\misc\\programming\\c#\\cactusosc\\udp\\oscudpserver.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{EE3DCBA5-CD2E-80DA-2FBF-08F57AB92E7D}|CactusOSC.csproj|solutionrelative:udp\\oscudpserver.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{EE3DCBA5-CD2E-80DA-2FBF-08F57AB92E7D}|CactusOSC.csproj|c:\\users\\roboc\\desktop\\misc\\programming\\c#\\cactusosc\\tcp\\osctcpserver.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{EE3DCBA5-CD2E-80DA-2FBF-08F57AB92E7D}|CactusOSC.csproj|solutionrelative:tcp\\osctcpserver.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{EE3DCBA5-CD2E-80DA-2FBF-08F57AB92E7D}|CactusOSC.csproj|c:\\users\\roboc\\desktop\\misc\\programming\\c#\\cactusosc\\udp\\oscudpsendserver.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{EE3DCBA5-CD2E-80DA-2FBF-08F57AB92E7D}|CactusOSC.csproj|solutionrelative:udp\\oscudpsendserver.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{EE3DCBA5-CD2E-80DA-2FBF-08F57AB92E7D}|CactusOSC.csproj|c:\\users\\roboc\\desktop\\misc\\programming\\c#\\cactusosc\\udp\\oscudpreceiveserver.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{EE3DCBA5-CD2E-80DA-2FBF-08F57AB92E7D}|CactusOSC.csproj|solutionrelative:udp\\oscudpreceiveserver.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{EE3DCBA5-CD2E-80DA-2FBF-08F57AB92E7D}|CactusOSC.csproj|c:\\users\\roboc\\desktop\\misc\\programming\\c#\\cactusosc\\tcp\\osctcpsendserver.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{EE3DCBA5-CD2E-80DA-2FBF-08F57AB92E7D}|CactusOSC.csproj|solutionrelative:tcp\\osctcpsendserver.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{EE3DCBA5-CD2E-80DA-2FBF-08F57AB92E7D}|CactusOSC.csproj|c:\\users\\roboc\\desktop\\misc\\programming\\c#\\cactusosc\\decodeencodeserver.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{EE3DCBA5-CD2E-80DA-2FBF-08F57AB92E7D}|CactusOSC.csproj|solutionrelative:decodeencodeserver.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{EE3DCBA5-CD2E-80DA-2FBF-08F57AB92E7D}|CactusOSC.csproj|c:\\users\\roboc\\desktop\\misc\\programming\\c#\\cactusosc\\tcp\\osctcpconnectionmanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{EE3DCBA5-CD2E-80DA-2FBF-08F57AB92E7D}|CactusOSC.csproj|solutionrelative:tcp\\osctcpconnectionmanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{EE3DCBA5-CD2E-80DA-2FBF-08F57AB92E7D}|CactusOSC.csproj|c:\\users\\roboc\\desktop\\misc\\programming\\c#\\cactusosc\\tcp\\osctcpreceiveserver.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{EE3DCBA5-CD2E-80DA-2FBF-08F57AB92E7D}|CactusOSC.csproj|solutionrelative:tcp\\osctcpreceiveserver.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
   ],
   "DocumentGroupContainers": [
@@ -18,19 +42,32 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 0,
+          "SelectedChildIndex": 8,
           "Children": [
             {
               "$type": "Document",
-              "DocumentIndex": 0,
+              "DocumentIndex": 3,
               "Title": "OSCUDPReceiveServer.cs",
               "DocumentMoniker": "C:\\Users\\roboc\\Desktop\\misc\\programming\\c#\\CactusOSC\\udp\\OSCUDPReceiveServer.cs",
               "RelativeDocumentMoniker": "udp\\OSCUDPReceiveServer.cs",
               "ToolTip": "C:\\Users\\roboc\\Desktop\\misc\\programming\\c#\\CactusOSC\\udp\\OSCUDPReceiveServer.cs",
               "RelativeToolTip": "udp\\OSCUDPReceiveServer.cs",
-              "ViewState": "AgIAACIAAAAAAAAAAAAgwDYAAAAMAAAAAAAAAA==",
+              "ViewState": "AgIAAHAAAAAAAAAAAAAUwIYAAAAbAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-08-20T15:39:08.128Z",
+              "WhenOpened": "2026-08-20T20:42:58.032Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "OSCUDPSendServer.cs",
+              "DocumentMoniker": "C:\\Users\\roboc\\Desktop\\misc\\programming\\c#\\CactusOSC\\udp\\OSCUDPSendServer.cs",
+              "RelativeDocumentMoniker": "udp\\OSCUDPSendServer.cs",
+              "ToolTip": "C:\\Users\\roboc\\Desktop\\misc\\programming\\c#\\CactusOSC\\udp\\OSCUDPSendServer.cs",
+              "RelativeToolTip": "udp\\OSCUDPSendServer.cs",
+              "ViewState": "AgIAACEAAAAAAAAAAAAUwKUAAAAdAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-08-20T20:42:22.527Z",
               "EditorCaption": ""
             },
             {
@@ -39,15 +76,80 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 5,
+              "Title": "decodeEncodeServer.cs",
+              "DocumentMoniker": "C:\\Users\\roboc\\Desktop\\misc\\programming\\c#\\CactusOSC\\decodeEncodeServer.cs",
+              "RelativeDocumentMoniker": "decodeEncodeServer.cs",
+              "ToolTip": "C:\\Users\\roboc\\Desktop\\misc\\programming\\c#\\CactusOSC\\decodeEncodeServer.cs",
+              "RelativeToolTip": "decodeEncodeServer.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAEACAAARAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-08-20T20:34:25.237Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "OSCTCPConnectionManager.cs",
+              "DocumentMoniker": "C:\\Users\\roboc\\Desktop\\misc\\programming\\c#\\CactusOSC\\tcp\\OSCTCPConnectionManager.cs",
+              "RelativeDocumentMoniker": "tcp\\OSCTCPConnectionManager.cs",
+              "ToolTip": "C:\\Users\\roboc\\Desktop\\misc\\programming\\c#\\CactusOSC\\tcp\\OSCTCPConnectionManager.cs",
+              "RelativeToolTip": "tcp\\OSCTCPConnectionManager.cs",
+              "ViewState": "AgIAAOMAAAAAAAAAAAAUwAMBAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-08-20T20:31:01.153Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "OSCTCPReceiveServer.cs",
+              "DocumentMoniker": "C:\\Users\\roboc\\Desktop\\misc\\programming\\c#\\CactusOSC\\tcp\\OSCTCPReceiveServer.cs",
+              "RelativeDocumentMoniker": "tcp\\OSCTCPReceiveServer.cs",
+              "ToolTip": "C:\\Users\\roboc\\Desktop\\misc\\programming\\c#\\CactusOSC\\tcp\\OSCTCPReceiveServer.cs",
+              "RelativeToolTip": "tcp\\OSCTCPReceiveServer.cs",
+              "ViewState": "AgIAAI8AAAAAAAAAAAAwwL8AAAAdAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-08-20T20:30:57.23Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
               "Title": "OSCTCPSendServer.cs",
               "DocumentMoniker": "C:\\Users\\roboc\\Desktop\\misc\\programming\\c#\\CactusOSC\\tcp\\OSCTCPSendServer.cs",
               "RelativeDocumentMoniker": "tcp\\OSCTCPSendServer.cs",
               "ToolTip": "C:\\Users\\roboc\\Desktop\\misc\\programming\\c#\\CactusOSC\\tcp\\OSCTCPSendServer.cs",
               "RelativeToolTip": "tcp\\OSCTCPSendServer.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAYAAAAkAAAAAAAAAA==",
+              "ViewState": "AgIAAEgAAAAAAAAAAAAgwIsAAAAbAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-08-19T19:47:11.815Z",
+              "WhenOpened": "2026-08-20T20:30:04.681Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "OSCTCPServer.cs",
+              "DocumentMoniker": "C:\\Users\\roboc\\Desktop\\misc\\programming\\c#\\CactusOSC\\tcp\\OSCTCPServer.cs",
+              "RelativeDocumentMoniker": "tcp\\OSCTCPServer.cs",
+              "ToolTip": "C:\\Users\\roboc\\Desktop\\misc\\programming\\c#\\CactusOSC\\tcp\\OSCTCPServer.cs",
+              "RelativeToolTip": "tcp\\OSCTCPServer.cs",
+              "ViewState": "AgIAACEBAAAAAAAAAAAkwDUBAAAhAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-08-20T17:57:57.432Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "OSCUDPServer.cs",
+              "DocumentMoniker": "C:\\Users\\roboc\\Desktop\\misc\\programming\\c#\\CactusOSC\\udp\\OSCUDPServer.cs",
+              "RelativeDocumentMoniker": "udp\\OSCUDPServer.cs",
+              "ToolTip": "C:\\Users\\roboc\\Desktop\\misc\\programming\\c#\\CactusOSC\\udp\\OSCUDPServer.cs",
+              "RelativeToolTip": "udp\\OSCUDPServer.cs",
+              "ViewState": "AgIAAG4BAAAAAAAAAAAuwNIBAABQAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-08-20T17:49:07.42Z",
               "EditorCaption": ""
             }
           ]

@@ -31,17 +31,25 @@ namespace CactusOSC
         private int channelCapacity;
         private bool boundedMode;
         private CancellationTokenSource shutdownTrigger;
-
+        private ErrorAndShutdownCarrier carrier;
+        private bool shuttingDown;
         /// <summary>
         /// create a new osc server instance
         /// </summary>
         public OSCUDPServer()
         {
             started = false;
+            shuttingDown = false;
+        }
+        private void detectFatalError()
+        {
+            if (carrier.getException() != null)
+            {
 
+                this.internalShutDown(carrier.getException());
+            }
         }
 
-        
         /// <summary>
         /// receive a decoded osc package if one is avalable
         /// </summary>
@@ -53,6 +61,7 @@ namespace CactusOSC
             
             if (started)
             {
+                detectFatalError();
                 return this.decoderEncoder.tryGetDecodedPackage(out targetPackage);
             }
             else
@@ -71,6 +80,7 @@ namespace CactusOSC
         {
             if (started)
             {
+                detectFatalError();
                 return this.decoderEncoder.getDecodedPackageList();
             }
             else
@@ -88,6 +98,7 @@ namespace CactusOSC
         {
             if (started)
             {
+                detectFatalError();
                 this.decoderEncoder.enqueuePackageEncoding(packageToSend).GetAwaiter().GetResult();
             }
             else
@@ -106,6 +117,7 @@ namespace CactusOSC
         {
             if (started)
             {
+                detectFatalError();
                 await decoderEncoder.enqueuePackageEncoding(packageToSend);
             }
             else
@@ -124,6 +136,7 @@ namespace CactusOSC
         {
             if (started)
             {
+                detectFatalError();
                 this.decoderEncoder.enqueuePackageListEncoding(packageListToSend).GetAwaiter().GetResult();
             }
             else
@@ -142,6 +155,7 @@ namespace CactusOSC
         {
             if (started)
             {
+                detectFatalError();
                 await this.decoderEncoder.enqueuePackageListEncoding(packageListToSend);
             }
             else
@@ -159,6 +173,7 @@ namespace CactusOSC
         {
             if (started)
             {
+                detectFatalError();
                 this.decoderEncoder.waitForEncodeQueueFinish().GetAwaiter().GetResult();
                 this.OSCSender.waitForSendFinish();
             }
@@ -176,6 +191,7 @@ namespace CactusOSC
         {
             if (started)
             {
+                detectFatalError();
                 await this.decoderEncoder.waitForEncodeQueueFinish();
                 await this.OSCSender.AsyncWaitForSendFinish();
             }
@@ -192,8 +208,10 @@ namespace CactusOSC
         /// <exception cref="ServerNotStartedException"></exception>
         public async Task WaitForOSCPackageReceptionAsync()
         {
+
             if (started)
             {
+                detectFatalError();
                 try
                 {
                     await channelMan.getDecodedPackagesChannel().Reader.WaitToReadAsync(shutdownTrigger.Token);
@@ -218,6 +236,7 @@ namespace CactusOSC
         {
             if (started)
             {
+                detectFatalError();
                 try 
                 {
                     channelMan.getDecodedPackagesChannel().Reader.WaitToReadAsync(shutdownTrigger.Token).AsTask().GetAwaiter().GetResult();
@@ -243,6 +262,7 @@ namespace CactusOSC
         {
             if (started)
             {
+                detectFatalError();
                 if (this.boundedMode)
                 {
                     if (channelMan.getPackagesToEncodeChannel().Reader.Count >= this.channelCapacity)
@@ -263,8 +283,8 @@ namespace CactusOSC
         public void Dispose()
         {
             
-            this.started = true;
-            this.ShutDown();
+            
+            this.internalShutDown();
         }
         /// <summary>
         /// wait for there to be space in the send queue
@@ -274,9 +294,10 @@ namespace CactusOSC
         {
             if (started)
             {
+                detectFatalError();
                 if (this.boundedMode)
                 {
-                    channelMan.getPackagesToSendChannel().Writer.WaitToWriteAsync().AsTask().GetAwaiter().GetResult();
+                    channelMan.getPackagesToSendChannel().Writer.WaitToWriteAsync(this.shutdownTrigger.Token).AsTask().GetAwaiter().GetResult();
                 }
                 
             }
@@ -295,9 +316,10 @@ namespace CactusOSC
         {
             if (started)
             {
+                detectFatalError();
                 if (this.boundedMode)
                 {
-                    await channelMan.getPackagesToSendChannel().Writer.WaitToWriteAsync();
+                    await channelMan.getPackagesToSendChannel().Writer.WaitToWriteAsync(this.shutdownTrigger.Token);
                 }
 
             }
@@ -321,6 +343,10 @@ namespace CactusOSC
         /// <exception cref="ServerAlreadyStartedException"></exception>
         public void StartOSCServer(ushort receivePort, IPAddress receiveIP, ushort sendPort, IPAddress sendIP, bool parallelMode=true, bool unboundedQueueMode=true, int boundedQueueSize=50000,OSCQueueDropMode ReceiveDropMode=OSCQueueDropMode.DropNewest,OSCQueueDropMode SendDropMode=OSCQueueDropMode.Wait)
         {
+            if (this.shuttingDown)
+            {
+                throw new ServerShuttingDownException();
+            }
             if (!this.started)
             {
                 this.receivePort = receivePort;
@@ -328,6 +354,7 @@ namespace CactusOSC
                 this.sendIP = sendIP;
                 this.receiveIP = receiveIP;
                 shutdownTrigger = new CancellationTokenSource();
+                this.carrier = new ErrorAndShutdownCarrier(shutdownTrigger);
                 this.boundedMode = !unboundedQueueMode;
                 this.channelCapacity = boundedQueueSize;
                 try
@@ -355,9 +382,9 @@ namespace CactusOSC
                     }
                     this.OSCSender = new OSCUDPSendServer(this.channelMan, this.sendIP, this.sendPort);
 
-                    this.decoderEncoder.start(parallelMode).GetAwaiter().GetResult();
-                    this.OSCSender.start();
-                    this.OSCReceiver.start();
+                    this.decoderEncoder.start(parallelMode,carrier).GetAwaiter().GetResult();
+                    this.OSCSender.start(carrier);
+                    this.OSCReceiver.start(carrier);
 
 
 
@@ -366,8 +393,8 @@ namespace CactusOSC
                 }
                 catch(Exception error)
                 {
-                    this.started = true;
-                    this.ShutDown();
+                    
+                    this.internalShutDown(error);
                 }
                 
             }
@@ -376,19 +403,35 @@ namespace CactusOSC
                 throw new ServerAlreadyStartedException();
             }
         }
+
+
         /// <summary>
         /// shut down a running OSC server instance
         /// </summary>
         /// <exception cref="ServerNotStartedException"></exception>
         public void ShutDown()
         {
-            if (this.started)
+            if (this.started) { 
+
+                this.internalShutDown();
+            }
+            else
             {
-                shutdownTrigger.Cancel();
+                throw new ServerNotStartedException();
+            }
+        }
+        private void internalShutDown(Exception error=null)
+        {
+                this.shuttingDown = true;
+                this.started=false;
+                
                 if (shutdownTrigger != null)
                 {
-                    shutdownTrigger.Dispose();
-                    shutdownTrigger = null;
+                    if (!this.shutdownTrigger.IsCancellationRequested)
+                    {
+                        shutdownTrigger.Cancel();
+                    }
+                    
                 }
 
                 if (this.decoderEncoder != null)
@@ -412,14 +455,19 @@ namespace CactusOSC
                 }
                 this.channelMan = null;
 
+                if (shutdownTrigger != null)
+                {
+                    shutdownTrigger.Dispose();
+                    shutdownTrigger = null;
+                }
+                shuttingDown = false;
                 
-                this.started = false;
+                if (error != null)
+                {
+                    throw new ServerStartupFailedException("OSC UDP Server Error!", error);
+                }
 
-            }
-            else
-            {
-                throw new ServerNotStartedException();
-            }
+            
         }
     }
 }

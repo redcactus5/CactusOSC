@@ -16,19 +16,26 @@ namespace CactusOSC
         private TaskCompletionSource<bool> SendFinished;
         private CancellationTokenSource ShutdownTrigger;
         private NetworkStream Connection;
+        private ErrorAndShutdownCarrier carrier;
+        private CancellationTokenSource linkedToken;
 
         public OSCTCPSendServer(ChannelManager channelMan,OSCTCPConnectionManager connectionManager)
         {
             this.ConnectionManager = connectionManager;
             this.ChannelMan = channelMan;
+            this.Connection=connectionManager.getStream();
             this.SendQueue = this.ChannelMan.getPackagesToSendChannel();
         }
 
-        public void Start()
+        public void Start(ErrorAndShutdownCarrier carrier)
         {
+
             this.ShutdownTrigger = new CancellationTokenSource();
+            this.linkedToken = CancellationTokenSource.CreateLinkedTokenSource(this.ShutdownTrigger.Token, carrier.getTokenSource().Token);
+            this.carrier = carrier;
+
             this.SendFinished = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-            this.SendTask = Task.Run(SendOSC);
+            this.SendTask = SendOSC();
         }
 
         public async Task SendOSC()
@@ -44,13 +51,13 @@ namespace CactusOSC
                     {
                         if (messageCache != null)
                         {
-                            await Connection.WriteAsync(messageCache,this.ShutdownTrigger.Token);
+                            await Connection.WriteAsync(messageCache,this.linkedToken.Token);
                         }
 
                     }
                     SendFinished.TrySetResult(true);
 
-                    await SendQueue.Reader.WaitToReadAsync(ShutdownTrigger.Token);
+                    await SendQueue.Reader.WaitToReadAsync(linkedToken.Token);
 
                     SendFinished = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
@@ -103,16 +110,34 @@ namespace CactusOSC
                 {
                     this.ShutdownTrigger.Cancel();
                 }
-                this.ShutdownTrigger.Dispose();
-                this.ShutdownTrigger = null;
-                byte[] garbageDisposal;
-                while (SendQueue.Reader.TryRead(out garbageDisposal))
-                {
+                
+                
+                
+            }
+            byte[] garbageDisposal;
+            while (SendQueue.Reader.TryRead(out garbageDisposal))
+            {
 
-                }
-
+            }
+            if (this.SendTask != null)
+            {
                 this.SendTask.GetAwaiter().GetResult();
                 this.SendTask = null;
+            }
+            if (this.ShutdownTrigger != null)
+            {
+                this.ShutdownTrigger.Dispose();
+                this.ShutdownTrigger = null;
+            }
+            if (linkedToken != null)
+            {
+                if (!linkedToken.IsCancellationRequested)
+                {
+                    linkedToken.Cancel();
+
+                }
+                linkedToken.Dispose();
+                linkedToken = null;
             }
         }
     }

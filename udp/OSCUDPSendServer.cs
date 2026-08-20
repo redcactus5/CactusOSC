@@ -22,11 +22,12 @@ namespace CactusOSC
         private ushort port;
         private Channel<byte[]> messageQueue;
         private CancellationTokenSource shutdownTrigger;
+        private CancellationTokenSource linkedTrigger;
         private Task sendTask;
         
         private ChannelManager converterBridge;
         private TaskCompletionSource<bool> sendFinished;
-    
+        private ErrorAndShutdownCarrier Carreir;
 
         public OSCUDPSendServer(ChannelManager converterBridge, IPAddress address, ushort port)
         {
@@ -37,16 +38,18 @@ namespace CactusOSC
             
             this.messageQueue=converterBridge.getPackagesToSendChannel();
         }
-        public void start()
+        public void start(ErrorAndShutdownCarrier carreir)
         {
             shutdownTrigger = new CancellationTokenSource();
+            linkedTrigger = CancellationTokenSource.CreateLinkedTokenSource(shutdownTrigger.Token, carreir.getTokenSource().Token);
+            this.Carreir = carreir;
             if (this.sendServer != null)
             {
                 sendServer.Close();
             }
             sendServer = new UdpClient(this.address.ToString(), this.port);
             sendFinished= new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-            sendTask = Task.Run(SendOSC);
+            sendTask = SendOSC();
         }
         public void waitForSendFinish()
         {
@@ -57,13 +60,13 @@ namespace CactusOSC
 
         public async Task AsyncWaitForSendFinish()
         {
-            await sendFinished.Task.WaitAsync(shutdownTrigger.Token);
+            await sendFinished.Task.WaitAsync(linkedTrigger.Token);
         }
         private async Task SendOSC()
         {
             byte[] messageCache;
 
-            while (!this.shutdownTrigger.IsCancellationRequested)
+            while (!this.linkedTrigger.IsCancellationRequested)
             {
                 try
                 {
@@ -72,13 +75,13 @@ namespace CactusOSC
                     {
                         if (messageCache!=null)
                         {
-                            await sendServer.SendAsync(messageCache,shutdownTrigger.Token);
+                            await sendServer.SendAsync(messageCache,linkedTrigger.Token);
                         }
 
                     }
                     sendFinished.TrySetResult(true);
 
-                    await messageQueue.Reader.WaitToReadAsync(shutdownTrigger.Token);
+                    await messageQueue.Reader.WaitToReadAsync(linkedTrigger.Token);
                     
                     sendFinished = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
@@ -92,10 +95,18 @@ namespace CactusOSC
                     //socket closed during shutdown
                     break;
                 }
-                catch (SocketException)
+                catch (SocketException e)
                 {
+                    if (shutdownTrigger.IsCancellationRequested)
+                    {
+                        break;
+                    }
+                    else
+                    {
+                        Carreir.setException( e);
+                    }
                     //socket closed during shutdown
-                    break;
+                    
                 }
                 catch (OperationCanceledException)
                 {
@@ -112,32 +123,55 @@ namespace CactusOSC
             {
                 throw new ServerNotStartedException();
             }
-            this.shutdownTrigger.Cancel();
-            this.sendServer.Close();
+            if (this.shutdownTrigger != null)
+            {
+                if (!this.shutdownTrigger.IsCancellationRequested)
+                {
+                    this.shutdownTrigger.Cancel();
+                }
+                
+                
+            }
+            
+            
             byte[] garbageDisposal;
             while (messageQueue.Reader.TryRead(out garbageDisposal))
             {
 
             }
-
-            this.sendTask.GetAwaiter().GetResult();
+            if (this.sendServer != null)
+            {
+                this.sendServer.Close();
+                this.sendServer.Dispose();
+                this.sendServer = null;
+            }
+            if (this.sendTask != null)
+            {
+                this.sendTask.GetAwaiter().GetResult();
+            }
+            if (this.shutdownTrigger != null)
+            {
+                this.shutdownTrigger.Dispose();
+                this.shutdownTrigger = null;
+            }
             this.sendTask = null;
-            this.Dispose();
+            if (linkedTrigger != null)
+            {
+                if (!linkedTrigger.IsCancellationRequested)
+                {
+                    linkedTrigger.Cancel();
+
+                }
+                linkedTrigger.Dispose();
+                linkedTrigger = null;
+            }
         }
 
         public void Dispose()
         {
             
-            if(this.shutdownTrigger != null)
-            {
-                this.shutdownTrigger.Dispose();
-                this.shutdownTrigger = null;
-            }
-            if(this.sendServer != null)
-            {
-                this.sendServer.Dispose();
-                this.sendServer = null;
-            }
+            this.shutdownServer();
+            
             
             
         }

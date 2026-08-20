@@ -21,6 +21,8 @@ namespace CactusOSC
         private NetworkStream Connection;
         private OSCTCPConnectionManager ConnectionManager;
         private bool ThrowOnOversizedMessage;
+        private ErrorAndShutdownCarrier Carrier;
+        private CancellationTokenSource linkedTrigger;
 
         public OSCTCPReceiveServer(OSCTCPConnectionManager ConnectionManager, ChannelManager ChannelMan,bool UnboundedMessageSize, uint MaxMessageSize, bool throwOnOversizedMessage)
         {
@@ -34,31 +36,50 @@ namespace CactusOSC
             this.ThrowOnOversizedMessage = throwOnOversizedMessage;
         }
 
-        public void Start()
+        public void Start(ErrorAndShutdownCarrier carrier)
         {
+            this.Carrier = carrier;
 
             ShutdownTrigger = new CancellationTokenSource();
-            this.ReceiveTask = Task.Run(ReceiveOSC);
+            this.linkedTrigger = CancellationTokenSource.CreateLinkedTokenSource(ShutdownTrigger.Token, carrier.getTokenSource().Token);
+            this.ReceiveTask = ReceiveOSC();
         }
 
         public async Task ReceiveOSC()
         {
             ChannelWriter<byte[]> writer = this.MessageQueue.Writer;
-            while (!this.ShutdownTrigger.IsCancellationRequested)
+            while (!this.linkedTrigger.IsCancellationRequested)
             {
                 
 
                 try
                 {
-                    await this.Connection.ReadExactlyAsync(this.SizeBuffer, this.ShutdownTrigger.Token);
+                    await this.Connection.ReadExactlyAsync(this.SizeBuffer, this.linkedTrigger.Token);
                     this.CurrentMessageSize = BinaryPrimitives.ReadInt32BigEndian(this.SizeBuffer);
+                    if(this.CurrentMessageSize < 0)
+                    {
+                        try
+                        {
+                            throw new OSCInvalidMessageSizeException();
+                        }catch(OSCInvalidMessageSizeException e){
+                            Carrier.setException(e);
+                        }
+                        
+                    }
                     if (!this.UnboundedMessageSize)
                     {
-                        if (this.CurrentMessageSize > this.MaxMessageSize)
+                        if (this.CurrentMessageSize > ((int)this.MaxMessageSize))
                         {
                             if (this.ThrowOnOversizedMessage)
                             {
-                                throw new OSCInvalidMessageSizeException();
+                                try
+                                {
+                                    throw new OSCInvalidMessageSizeException();
+                                }
+                                catch (OSCInvalidMessageSizeException e)
+                                {
+                                    Carrier.setException(e);
+                                }
                             }
                             else
                             {
@@ -115,9 +136,18 @@ namespace CactusOSC
                     //user called shutdown
                     break;
                 }
-                catch (EndOfStreamException)
+                catch (EndOfStreamException e)
                 {
-                    break;
+                    if (!ShutdownTrigger.IsCancellationRequested)
+                    {
+
+                        Carrier.setException(e);
+                    }
+                    else
+                    {
+                        break;
+                    }
+                    
                 }
                 
             }
@@ -137,11 +167,30 @@ namespace CactusOSC
                 {
                     this.ShutdownTrigger.Cancel();
                 }
+                
+            }
+
+            if (this.ReceiveTask != null)
+            {
+                this.ReceiveTask.GetAwaiter().GetResult();
+                this.ReceiveTask = null;
+            }
+            
+            if(this.ShutdownTrigger != null)
+            {
                 this.ShutdownTrigger.Dispose();
                 this.ShutdownTrigger = null;
             }
-            this.ReceiveTask.GetAwaiter().GetResult();
-            this.ReceiveTask = null;
+            if (linkedTrigger != null)
+            {
+                if (!linkedTrigger.IsCancellationRequested)
+                {
+                    linkedTrigger.Cancel();
+
+                }
+                linkedTrigger.Dispose();
+                linkedTrigger = null;
+            }
         }
     }
 }

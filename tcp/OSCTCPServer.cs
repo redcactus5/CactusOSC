@@ -11,6 +11,8 @@ You should have received a copy of the GNU Lesser General Public License along w
 
 
 using System.Net;
+using System.Net.NetworkInformation;
+
 
 namespace CactusOSC
 {
@@ -37,19 +39,31 @@ namespace CactusOSC
         private ushort listenPort;
         private bool specificAddress;
         private bool throwOnOversizedMessage;
+        private bool shuttingDown;
+        
 
         private CancellationTokenSource shutdownTrigger;
-
+        private ErrorAndShutdownCarrier carrier;
         /// <summary>
         /// create a new osc server instance
         /// </summary>
         public OSCTCPServer()
         {
             started = false;
-
+            this.shuttingDown = false;
         }
 
         
+
+        private void detectFatalError()
+        {
+            if(carrier.getException()!=null)
+            {
+                
+                this.internalShutDown(carrier.getException());
+            }
+        }
+
         /// <summary>
         /// receive a decoded osc package if one is avalable
         /// </summary>
@@ -61,7 +75,9 @@ namespace CactusOSC
             
             if (started)
             {
+                this.detectFatalError();
                 return this.decoderEncoder.tryGetDecodedPackage(out targetPackage);
+                
             }
             else
             {
@@ -79,7 +95,9 @@ namespace CactusOSC
         {
             if (started)
             {
+                this.detectFatalError();
                 return this.decoderEncoder.getDecodedPackageList();
+                
             }
             else
             {
@@ -96,7 +114,9 @@ namespace CactusOSC
         {
             if (started)
             {
+                this.detectFatalError();
                 this.decoderEncoder.enqueuePackageEncoding(packageToSend).GetAwaiter().GetResult();
+                
             }
             else
             {
@@ -114,7 +134,9 @@ namespace CactusOSC
         {
             if (started)
             {
+                this.detectFatalError();
                 await decoderEncoder.enqueuePackageEncoding(packageToSend);
+                
             }
             else
             {
@@ -132,7 +154,9 @@ namespace CactusOSC
         {
             if (started)
             {
+                this.detectFatalError();
                 this.decoderEncoder.enqueuePackageListEncoding(packageListToSend).GetAwaiter().GetResult();
+                
             }
             else
             {
@@ -150,7 +174,9 @@ namespace CactusOSC
         {
             if (started)
             {
+                this.detectFatalError();
                 await this.decoderEncoder.enqueuePackageListEncoding(packageListToSend);
+                
             }
             else
             {
@@ -167,8 +193,10 @@ namespace CactusOSC
         {
             if (started)
             {
+                this.detectFatalError();
                 this.decoderEncoder.waitForEncodeQueueFinish().GetAwaiter().GetResult();
                 this.OSCSender.waitForSendFinish();
+                
             }
             else
             {
@@ -184,8 +212,10 @@ namespace CactusOSC
         {
             if (started)
             {
+                this.detectFatalError();
                 await this.decoderEncoder.waitForEncodeQueueFinish();
                 await this.OSCSender.AsyncWaitForSendFinish();
+                
             }
             else
             {
@@ -202,6 +232,7 @@ namespace CactusOSC
         {
             if (started)
             {
+                this.detectFatalError();
                 try
                 {
                     await channelMan.getDecodedPackagesChannel().Reader.WaitToReadAsync(shutdownTrigger.Token);
@@ -210,6 +241,7 @@ namespace CactusOSC
                 {
 
                 }
+                
 
             }
             else
@@ -224,8 +256,10 @@ namespace CactusOSC
         /// <exception cref="ServerNotStartedException"></exception>
         public void WaitForOSCPackageReception()
         {
+            
             if (started)
             {
+                this.detectFatalError();
                 try 
                 {
                     channelMan.getDecodedPackagesChannel().Reader.WaitToReadAsync(shutdownTrigger.Token).AsTask().GetAwaiter().GetResult();
@@ -235,6 +269,7 @@ namespace CactusOSC
 
                 }
                 
+
             }  
             else
             {
@@ -271,8 +306,8 @@ namespace CactusOSC
         public void Dispose()
         {
             
-            this.started = true;
-            this.ShutDown();
+            
+            this.internalShutDown();
         }
         /// <summary>
         /// wait for there to be space in the send queue
@@ -282,9 +317,10 @@ namespace CactusOSC
         {
             if (started)
             {
+                detectFatalError();
                 if (this.boundedMode)
                 {
-                    channelMan.getPackagesToSendChannel().Writer.WaitToWriteAsync().AsTask().GetAwaiter().GetResult();
+                    channelMan.getPackagesToSendChannel().Writer.WaitToWriteAsync(this.shutdownTrigger.Token).AsTask().GetAwaiter().GetResult();
                 }
                 
             }
@@ -303,9 +339,10 @@ namespace CactusOSC
         {
             if (started)
             {
+                detectFatalError();
                 if (this.boundedMode)
                 {
-                    await channelMan.getPackagesToSendChannel().Writer.WaitToWriteAsync();
+                    await channelMan.getPackagesToSendChannel().Writer.WaitToWriteAsync(this.shutdownTrigger.Token);
                 }
 
             }
@@ -334,6 +371,10 @@ namespace CactusOSC
         /// <exception cref="ServerAlreadyStartedException"></exception>
         public void AcceptConnection(ushort ListenPort, bool specificAddress = false, IPAddress Address = null, bool ShouldTimeout = true, uint Timeout = 3000, bool UnboundedMessageSize = false, uint MaxMessageSize=640000, bool ThrowOnOversizedMessage=true, bool ParallelMode=true, bool UnboundedQueueMode=true, int BoundedQueueSize=50000,OSCQueueDropMode ReceiveDropMode=OSCQueueDropMode.DropNewest,OSCQueueDropMode SendDropMode=OSCQueueDropMode.Wait)
         {
+            if (this.shuttingDown)
+            {
+                throw new ServerShuttingDownException();
+            }
             if (!this.started)
             {
                 this.listenPort = ListenPort;
@@ -346,6 +387,7 @@ namespace CactusOSC
                 this.throwOnOversizedMessage = ThrowOnOversizedMessage;
                 
                 shutdownTrigger = new CancellationTokenSource();
+                this.carrier = new ErrorAndShutdownCarrier(shutdownTrigger);
                 this.boundedMode = !UnboundedQueueMode;
                 this.channelCapacity = BoundedQueueSize;
                 try
@@ -383,9 +425,9 @@ namespace CactusOSC
                     
                     this.OSCSender = new OSCTCPSendServer(this.channelMan,this.connectionMan);
 
-                    this.decoderEncoder.start(ParallelMode).GetAwaiter().GetResult();
-                    this.OSCSender.Start();
-                    this.OSCReceiver.Start();
+                    this.decoderEncoder.start(ParallelMode,carrier).GetAwaiter().GetResult();
+                    this.OSCSender.Start(carrier);
+                    this.OSCReceiver.Start(carrier);
 
 
 
@@ -394,8 +436,8 @@ namespace CactusOSC
                 }
                 catch(Exception error)
                 {
-                    this.started = true;
-                    this.ShutDown();
+                    
+                    this.internalShutDown(error);
                 }
                 
             }
@@ -423,10 +465,14 @@ namespace CactusOSC
         /// <exception cref="ServerAlreadyStartedException"></exception>
         public void InnitiateConnection(IPAddress Address, ushort Port, bool ShouldTimeout = true, uint Timeout = 3000, bool UnboundedMessageSize = false, uint MaxMessageSize = 640000, bool ThrowOnOversizedMessage = true, bool ParallelMode = true, bool UnboundedQueueMode = true, int BoundedQueueSize = 50000, OSCQueueDropMode ReceiveDropMode = OSCQueueDropMode.DropNewest, OSCQueueDropMode SendDropMode = OSCQueueDropMode.Wait)
         {
+            if (this.shuttingDown)
+            {
+                throw new ServerShuttingDownException();
+            }
             if (!this.started)
             {
                 
-                
+                this.TargetPort = Port;
                 this.TargetAddress = Address;
                 this.shouldTimeout = ShouldTimeout;
                 this.timeout = Timeout;
@@ -435,6 +481,7 @@ namespace CactusOSC
                 this.throwOnOversizedMessage = ThrowOnOversizedMessage;
 
                 shutdownTrigger = new CancellationTokenSource();
+                this.carrier = new ErrorAndShutdownCarrier(shutdownTrigger);
                 this.boundedMode = !UnboundedQueueMode;
                 this.channelCapacity = BoundedQueueSize;
                 try
@@ -465,16 +512,16 @@ namespace CactusOSC
 
                     }
                     this.connectionMan = new OSCTCPConnectionManager();
-                    this.connectionMan.AcceptConnection(this.listenPort, this.specificAddress, this.TargetAddress, this.shouldTimeout, this.timeout).GetAwaiter().GetResult();
+                    this.connectionMan.InitiateConnection(this.TargetAddress,this.TargetPort,this.shouldTimeout,this.timeout).GetAwaiter().GetResult();
 
 
                     this.OSCReceiver = new OSCTCPReceiveServer(this.connectionMan, this.channelMan, this.unboundedMessageSize, this.maxMessageSize, this.throwOnOversizedMessage);
 
                     this.OSCSender = new OSCTCPSendServer(this.channelMan, this.connectionMan);
 
-                    this.decoderEncoder.start(ParallelMode).GetAwaiter().GetResult();
-                    this.OSCSender.Start();
-                    this.OSCReceiver.Start();
+                    this.decoderEncoder.start(ParallelMode,carrier).GetAwaiter().GetResult();
+                    this.OSCSender.Start(carrier);
+                    this.OSCReceiver.Start(carrier);
 
 
 
@@ -483,8 +530,8 @@ namespace CactusOSC
                 }
                 catch (Exception error)
                 {
-                    this.started = true;
-                    this.ShutDown();
+                   
+                    this.internalShutDown(error);
                 }
 
             }
@@ -501,46 +548,64 @@ namespace CactusOSC
         {
             if (this.started)
             {
-                shutdownTrigger.Cancel();
-                if (shutdownTrigger != null)
-                {
-                    shutdownTrigger.Dispose();
-                    shutdownTrigger = null;
-                }
 
-                if (this.decoderEncoder != null)
-                {
-                    this.decoderEncoder.shutdown();
-                }
-                this.decoderEncoder = null;
-                if (this.OSCReceiver != null)
-                {
-                    this.OSCReceiver.Shutdown();
-                }
-                this.OSCReceiver = null;
-                if (this.OSCSender != null)
-                {
-                    this.OSCSender.Shutdown();
-                }
-                this.OSCSender = null;
-                if (this.channelMan != null)
-                {
-                    this.channelMan.shutDown();
-                }
-                this.channelMan = null;
-                if (this.connectionMan != null)
-                {
-                    this.connectionMan.Shutdown();
-                }
-                this.connectionMan = null;
-                
-                this.started = false;
-
+                this.internalShutDown();
             }
             else
             {
                 throw new ServerNotStartedException();
             }
+        }
+        public void internalShutDown(Exception error=null)
+        {
+            this.shuttingDown = true;
+            this.started = false;
+                
+            if (shutdownTrigger != null)
+            {
+                if (!this.shutdownTrigger.IsCancellationRequested)
+                {
+                    shutdownTrigger.Cancel();
+                }
+                
+            }
+
+            if (this.decoderEncoder != null)
+            {
+                this.decoderEncoder.shutdown();
+            }
+            this.decoderEncoder = null;
+            if (this.OSCReceiver != null)
+            {
+                this.OSCReceiver.Shutdown();
+            }
+            this.OSCReceiver = null;
+            if (this.OSCSender != null)
+            {
+                this.OSCSender.Shutdown();
+            }
+            this.OSCSender = null;
+            if (this.channelMan != null)
+            {
+                this.channelMan.shutDown();
+            }
+            this.channelMan = null;
+            if (this.connectionMan != null)
+            {
+                this.connectionMan.Shutdown();
+            }
+            this.connectionMan = null;
+            if(this.shutdownTrigger!=null)
+            {
+                shutdownTrigger.Dispose();
+                shutdownTrigger = null;
+            }
+            shuttingDown = false; 
+            if (error != null)
+            {
+                throw new ServerStartupFailedException("OSC TCP Server error!", error);
+            }
+            
         }
     }
 }
