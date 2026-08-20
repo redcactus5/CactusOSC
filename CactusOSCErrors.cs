@@ -45,7 +45,24 @@ namespace CactusOSC
             : base(message, innerException)
         {
         }
-    } 
+    }
+
+    public class OSCInvalidMessageSizeException : Exception
+    {
+        public OSCInvalidMessageSizeException()
+        {
+        }
+
+        public OSCInvalidMessageSizeException(string message)
+            : base(message)
+        {
+        }
+
+        public OSCInvalidMessageSizeException(string message, Exception innerException)
+            : base(message, innerException)
+        {
+        }
+    }
     public class ServerNotStartedException: InvalidOperationException
     {
         public ServerNotStartedException()

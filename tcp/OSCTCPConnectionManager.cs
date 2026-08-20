@@ -17,7 +17,7 @@ namespace CactusOSC
         private TcpListener Listener;
         private TcpClient Connection;
         private NetworkStream AccessPort;
-        private ValueTask<TcpClient> ConnectionTask;
+        private Task ConnectionTask;
         private Task ConnectionTimerTask;
         
         
@@ -36,101 +36,127 @@ namespace CactusOSC
         
         public async Task AcceptConnection(ushort ListenPort,bool specificAddress, IPAddress address, bool ShouldTimeout, uint Timeout)
         {
-            ShutdownTrigger = new CancellationTokenSource();
-            if (specificAddress)
+            try
             {
-                this.Listener = new TcpListener(address, ListenPort);
-            }
-            else
-            {
-                this.Listener = new TcpListener(IPAddress.Any, ListenPort);
-            }
-            if (ShouldTimeout)
-            {
-                this.endTimerEarly = new CancellationTokenSource();
-                this.Listener.Start();
-                this.linkedTokens = CancellationTokenSource.CreateLinkedTokenSource(ShutdownTrigger.Token, endTimerEarly.Token);
-                this.ConnectionTimerTask = Task.Delay(Timeout,linkedTokens.Token);
-                this.ConnectionTask=Listener.AcceptTcpClientAsync(ShutdownTrigger.Token).AsTask();
-                Task firstToFinish = await Task.WhenAny(this.ConnectionTimerTask, this.ConnectionTask);
-                if (firstToFinish == ConnectionTimerTask)
+                ShutdownTrigger = new CancellationTokenSource();
+                if (specificAddress)
                 {
-                    this.ShutDown();
-                    throw new OSCServerConnectionTimeoutException();
+                    if(address == null)
+                    {
+                        this.Listener = new TcpListener(IPAddress.Any, ListenPort);
+                    }
+                    else
+                    {
+                        this.Listener = new TcpListener(address, ListenPort);
+                    }
+                    
                 }
                 else
                 {
-                    this.Connection = ConnectionTask.Result;
-                    endTimerEarly.Cancel();
-                    await this.ConnectionTimerTask;
-                    this.ConnectionTimerTask = null;
-                    
+                    this.Listener = new TcpListener(IPAddress.Any, ListenPort);
                 }
-                
-            }
-            else
-            {
-                this.Listener.Start();
-                this.ConnectionTask = Listener.AcceptTcpClientAsync(ShutdownTrigger.Token);
-                await ConnectionTask;
-                this.Connection = ConnectionTask.Result;
-                
-            }
+                if (ShouldTimeout)
+                {
+                    this.endTimerEarly = new CancellationTokenSource();
+                    this.Listener.Start();
+                    this.linkedTokens = CancellationTokenSource.CreateLinkedTokenSource(ShutdownTrigger.Token, endTimerEarly.Token);
+                    this.ConnectionTimerTask = Task.Delay((int)Timeout, linkedTokens.Token);
 
-            this.Listener.Stop();
-            this.AccessPort = this.Connection.GetStream();
-            this.ConnectionTask = null;
+                    ValueTask<TcpClient> clientTask = Listener.AcceptTcpClientAsync(ShutdownTrigger.Token);
+                    this.ConnectionTask = clientTask.AsTask();
+                    Task firstToFinish = await Task.WhenAny(this.ConnectionTimerTask, this.ConnectionTask);
+                    if (firstToFinish == ConnectionTimerTask)
+                    {
+                        this.Shutdown();
+                        throw new OSCServerConnectionTimeoutException();
+                    }
+                    else
+                    {
+                        this.Connection = clientTask.Result;
+                        endTimerEarly.Cancel();
+                        await this.ConnectionTimerTask;
+                        this.ConnectionTimerTask = null;
+
+                    }
+
+                }
+                else
+                {
+                    this.Listener.Start();
+                    ValueTask<TcpClient> clientTask = Listener.AcceptTcpClientAsync(ShutdownTrigger.Token);
+                    this.ConnectionTask = clientTask.AsTask();
+                    await ConnectionTask;
+                    this.Connection = clientTask.Result;
+
+                }
+
+                this.Listener.Stop();
+                this.AccessPort = this.Connection.GetStream();
+                this.ConnectionTask = null;
+            }
+            catch (OperationCanceledException)
+            {
+
+            }
+            
             
 
         }
 
         public async Task InitiateConnection(IPAddress Address, ushort Port, bool ShouldTimeout, uint Timeout) 
         {
-            
-            this.ShutdownTrigger=new CancellationTokenSource();
-            this.Connection=new TcpClient();
-            if (ShouldTimeout)
+            try
             {
-                this.endTimerEarly=new CancellationTokenSource();
-                this.linkedTokens = CancellationTokenSource.CreateLinkedTokenSource(ShutdownTrigger.Token, endTimerEarly.Token);
-                this.ConnectionTimerTask = Task.Delay(timeout, linkedTokens.Token);
-                this.ConnectionTask = Connection.ConnectAsync(Address, Port);
-                Task firstToFinish = await Task.WhenAny(this.ConnectionTimerTask, this.ConnectionTask);
-                if (firstToFinish == ConnectionTimerTask)
+                this.ShutdownTrigger = new CancellationTokenSource();
+                this.Connection = new TcpClient();
+                if (ShouldTimeout)
                 {
-                    this.ShutDown();
-                    throw new OSCServerConnectionTimeoutException();
+                    this.endTimerEarly = new CancellationTokenSource();
+                    this.linkedTokens = CancellationTokenSource.CreateLinkedTokenSource(ShutdownTrigger.Token, endTimerEarly.Token);
+                    this.ConnectionTimerTask = Task.Delay((int)Timeout, linkedTokens.Token);
+                    this.ConnectionTask = Connection.ConnectAsync(Address, Port);
+                    Task firstToFinish = await Task.WhenAny(this.ConnectionTimerTask, this.ConnectionTask);
+                    if (firstToFinish == ConnectionTimerTask)
+                    {
+                        this.Shutdown();
+                        throw new OSCServerConnectionTimeoutException();
+                    }
+                    else
+                    {
+
+                        endTimerEarly.Cancel();
+                        await ConnectionTimerTask;
+                        ConnectionTimerTask = null;
+
+                    }
                 }
                 else
                 {
-                    
-                    endTimerEarly.Cancel();
-                    await ConnectionTimerTask;
-                    ConnectionTimerTask = null;
-
+                    this.ConnectionTask = Connection.ConnectAsync(Address, Port);
+                    await this.ConnectionTask;
                 }
+                this.AccessPort = this.Connection.GetStream();
+                this.ConnectionTask = null;
             }
-            else
+            catch (OperationCanceledException)
             {
-                this.ConnectionTask = Connection.ConnectAsync(address, port);
-                await this.ConnectionTask;
+
             }
-            this.AccessPort=this.Connection.GetStream();
-            this.ConnectionTask = null;
+            
         }
         
         
         
         public void Dispose()
         {
-            this.ShutDown();
+            this.Shutdown();
         }
 
         public NetworkStream getStream()
         {
             return this.AccessPort;
         }
-        public void ShutDown()
+        public void Shutdown()
         {
             if(this.ShutdownTrigger != null)
             {

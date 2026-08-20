@@ -67,7 +67,7 @@ namespace CactusOSC
                     
 
 
-                    await writer.WriteAsync(message.Buffer);
+                    await writer.WriteAsync(message.Buffer,this.shutdownTrigger.Token);
                 }
                 catch (ObjectDisposedException)
                 {
@@ -106,10 +106,13 @@ namespace CactusOSC
             if (this.shutdownTrigger != null)
             {
                 this.shutdownTrigger.Dispose();
+                this.shutdownTrigger = null;
             }
             if(this.receiveServer!= null)
             {
+
                 this.receiveServer.Dispose();
+                this.receiveServer = null;
             }
             
         }

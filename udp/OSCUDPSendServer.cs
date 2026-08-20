@@ -51,7 +51,7 @@ namespace CactusOSC
         public void waitForSendFinish()
         {
             
-            sendFinished.Task.GetAwaiter().GetResult();
+            this.AsyncWaitForSendFinish().GetAwaiter().GetResult();
             
         }
 

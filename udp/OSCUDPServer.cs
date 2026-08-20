@@ -17,7 +17,7 @@ namespace CactusOSC
     /// <summary>
     /// a prebuilt, ready made udp server for sending and receiving OSC packages
     /// </summary>
-    public sealed class OSCTCPServer : IDisposable
+    public sealed class OSCUDPServer : IDisposable
     {
         private ChannelManager channelMan;
         private DecodeEncodeServer decoderEncoder;
@@ -35,7 +35,7 @@ namespace CactusOSC
         /// <summary>
         /// create a new osc server instance
         /// </summary>
-        public OSCTCPServer()
+        public OSCUDPServer()
         {
             started = false;
 

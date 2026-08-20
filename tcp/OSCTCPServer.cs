@@ -21,16 +21,23 @@ namespace CactusOSC
     {
         private ChannelManager channelMan;
         private DecodeEncodeServer decoderEncoder;
-        private OSCUDPReceiveServer OSCReceiver;
-        private OSCUDPSendServer OSCSender;
+        private OSCTCPReceiveServer OSCReceiver;
+        private OSCTCPSendServer OSCSender;
         private OSCTCPConnectionManager connectionMan;
-        private IPAddress sendIP;
-        private ushort sendPort;
-        private ushort receivePort;
-        private IPAddress receiveIP;
+        private IPAddress TargetAddress;
+        private ushort TargetPort;
+        private bool shouldTimeout;
+        private uint timeout;
+        private bool unboundedMessageSize;
+        private uint maxMessageSize;
+        
         private bool started;
         private int channelCapacity;
         private bool boundedMode;
+        private ushort listenPort;
+        private bool specificAddress;
+        private bool throwOnOversizedMessage;
+
         private CancellationTokenSource shutdownTrigger;
 
         /// <summary>
@@ -309,28 +316,38 @@ namespace CactusOSC
 
         }
         /// <summary>
-        /// configure and start an osc server instance
+        /// start the server and wait for and automatically accept a connection
         /// </summary>
-        /// <param name="receivePort"></param>
-        /// <param name="receiveIP"></param>
-        /// <param name="sendPort"></param>
-        /// <param name="sendIP"></param>
-        /// <param name="parallelMode"></param>
-        /// <param name="unboundedQueueMode"></param>
-        /// <param name="boundedQueueSize"></param>
+        /// <param name="ListenPort"></param>
+        /// <param name="specificAddress"></param>
+        /// <param name="address"></param>
+        /// <param name="ShouldTimeout"></param>
+        /// <param name="Timeout"></param>
+        /// <param name="UnboundedMessageSize"></param>
+        /// <param name="MaxMessageSize"></param>
+        /// <param name="ThrowOnOversizedMessage"></param>
+        /// <param name="ParallelMode"></param>
+        /// <param name="UnboundedQueueMode"></param>
+        /// <param name="BoundedQueueSize"></param>
         /// <param name="ReceiveDropMode"></param>
+        /// <param name="SendDropMode"></param>
         /// <exception cref="ServerAlreadyStartedException"></exception>
-        public void StartOSCServer(ushort receivePort, string receiveIP, ushort sendPort, string sendIP, bool parallelMode=true, bool unboundedQueueMode=true, int boundedQueueSize=50000,OSCQueueDropMode ReceiveDropMode=OSCQueueDropMode.DropNewest,OSCQueueDropMode SendDropMode=OSCQueueDropMode.Wait)
+        public void AcceptConnection(ushort ListenPort, bool specificAddress = false, IPAddress Address = null, bool ShouldTimeout = true, uint Timeout = 3000, bool UnboundedMessageSize = false, uint MaxMessageSize=640000, bool ThrowOnOversizedMessage=true, bool ParallelMode=true, bool UnboundedQueueMode=true, int BoundedQueueSize=50000,OSCQueueDropMode ReceiveDropMode=OSCQueueDropMode.DropNewest,OSCQueueDropMode SendDropMode=OSCQueueDropMode.Wait)
         {
             if (!this.started)
             {
-                this.receivePort = receivePort;
-                this.sendPort = sendPort;
-                this.sendIP = sendIP;
-                this.receiveIP = receiveIP;
+                this.listenPort = ListenPort;
+                this.specificAddress = specificAddress;
+                this.TargetAddress = Address;
+                this.shouldTimeout = ShouldTimeout;
+                this.timeout = Timeout;
+                this.unboundedMessageSize = UnboundedMessageSize;
+                this.maxMessageSize = MaxMessageSize;
+                this.throwOnOversizedMessage = ThrowOnOversizedMessage;
+                
                 shutdownTrigger = new CancellationTokenSource();
-                this.boundedMode = !unboundedQueueMode;
-                this.channelCapacity = boundedQueueSize;
+                this.boundedMode = !UnboundedQueueMode;
+                this.channelCapacity = BoundedQueueSize;
                 try
                 {
                     if (this.channelMan != null)
@@ -338,27 +355,37 @@ namespace CactusOSC
                         this.channelMan.shutDown();
                     }
 
-                    this.channelMan = new ChannelManager(unboundedQueueMode, boundedQueueSize, ReceiveDropMode,SendDropMode);
+                    this.channelMan = new ChannelManager(UnboundedQueueMode, BoundedQueueSize, ReceiveDropMode,SendDropMode);
 
                     if (this.decoderEncoder != null)
                     {
                         this.decoderEncoder.shutdown();
                     }
                     this.decoderEncoder = new DecodeEncodeServer(this.channelMan);
-                    if (this.OSCReceiver != null)
-                    {
-                        this.OSCReceiver.shutdownServer();
-                    }
-                    this.OSCReceiver = new OSCUDPReceiveServer(this.channelMan, this.receiveIP, this.receivePort);
                     if (this.OSCSender != null)
                     {
-                        this.OSCSender.shutdownServer();
+                        this.OSCSender.Shutdown();
                     }
-                    this.OSCSender = new OSCUDPSendServer(this.channelMan, this.sendIP, this.sendPort);
+                    if (this.OSCReceiver != null)
+                    {
+                        this.OSCReceiver.Shutdown();
+                    }
+                    if (this.connectionMan != null)
+                    {
+                        this.connectionMan.Shutdown();
 
-                    this.decoderEncoder.start(parallelMode).GetAwaiter().GetResult();
-                    this.OSCSender.start();
-                    this.OSCReceiver.start();
+                    }
+                    this.connectionMan = new OSCTCPConnectionManager();
+                    this.connectionMan.AcceptConnection(this.listenPort, this.specificAddress, this.TargetAddress, this.shouldTimeout, this.timeout).GetAwaiter().GetResult();
+
+
+                    this.OSCReceiver = new OSCTCPReceiveServer(this.connectionMan,this.channelMan,this.unboundedMessageSize,this.maxMessageSize,this.throwOnOversizedMessage);
+                    
+                    this.OSCSender = new OSCTCPSendServer(this.channelMan,this.connectionMan);
+
+                    this.decoderEncoder.start(ParallelMode).GetAwaiter().GetResult();
+                    this.OSCSender.Start();
+                    this.OSCReceiver.Start();
 
 
 
@@ -371,6 +398,95 @@ namespace CactusOSC
                     this.ShutDown();
                 }
                 
+            }
+            else
+            {
+                throw new ServerAlreadyStartedException();
+            }
+        }
+        /// <summary>
+        /// start the server and wait for and automatically accept a connection
+        /// </summary>
+        /// <param name="ListenPort"></param>
+        /// <param name="specificAddress"></param>
+        /// <param name="address"></param>
+        /// <param name="ShouldTimeout"></param>
+        /// <param name="Timeout"></param>
+        /// <param name="UnboundedMessageSize"></param>
+        /// <param name="MaxMessageSize"></param>
+        /// <param name="ThrowOnOversizedMessage"></param>
+        /// <param name="ParallelMode"></param>
+        /// <param name="UnboundedQueueMode"></param>
+        /// <param name="BoundedQueueSize"></param>
+        /// <param name="ReceiveDropMode"></param>
+        /// <param name="SendDropMode"></param>
+        /// <exception cref="ServerAlreadyStartedException"></exception>
+        public void InnitiateConnection(IPAddress Address, ushort Port, bool ShouldTimeout = true, uint Timeout = 3000, bool UnboundedMessageSize = false, uint MaxMessageSize = 640000, bool ThrowOnOversizedMessage = true, bool ParallelMode = true, bool UnboundedQueueMode = true, int BoundedQueueSize = 50000, OSCQueueDropMode ReceiveDropMode = OSCQueueDropMode.DropNewest, OSCQueueDropMode SendDropMode = OSCQueueDropMode.Wait)
+        {
+            if (!this.started)
+            {
+                
+                
+                this.TargetAddress = Address;
+                this.shouldTimeout = ShouldTimeout;
+                this.timeout = Timeout;
+                this.unboundedMessageSize = UnboundedMessageSize;
+                this.maxMessageSize = MaxMessageSize;
+                this.throwOnOversizedMessage = ThrowOnOversizedMessage;
+
+                shutdownTrigger = new CancellationTokenSource();
+                this.boundedMode = !UnboundedQueueMode;
+                this.channelCapacity = BoundedQueueSize;
+                try
+                {
+                    if (this.channelMan != null)
+                    {
+                        this.channelMan.shutDown();
+                    }
+
+                    this.channelMan = new ChannelManager(UnboundedQueueMode, BoundedQueueSize, ReceiveDropMode, SendDropMode);
+
+                    if (this.decoderEncoder != null)
+                    {
+                        this.decoderEncoder.shutdown();
+                    }
+                    this.decoderEncoder = new DecodeEncodeServer(this.channelMan);
+                    if (this.OSCSender != null)
+                    {
+                        this.OSCSender.Shutdown();
+                    }
+                    if (this.OSCReceiver != null)
+                    {
+                        this.OSCReceiver.Shutdown();
+                    }
+                    if (this.connectionMan != null)
+                    {
+                        this.connectionMan.Shutdown();
+
+                    }
+                    this.connectionMan = new OSCTCPConnectionManager();
+                    this.connectionMan.AcceptConnection(this.listenPort, this.specificAddress, this.TargetAddress, this.shouldTimeout, this.timeout).GetAwaiter().GetResult();
+
+
+                    this.OSCReceiver = new OSCTCPReceiveServer(this.connectionMan, this.channelMan, this.unboundedMessageSize, this.maxMessageSize, this.throwOnOversizedMessage);
+
+                    this.OSCSender = new OSCTCPSendServer(this.channelMan, this.connectionMan);
+
+                    this.decoderEncoder.start(ParallelMode).GetAwaiter().GetResult();
+                    this.OSCSender.Start();
+                    this.OSCReceiver.Start();
+
+
+
+
+                    this.started = true;
+                }
+                catch (Exception error)
+                {
+                    this.started = true;
+                    this.ShutDown();
+                }
+
             }
             else
             {
@@ -399,12 +515,12 @@ namespace CactusOSC
                 this.decoderEncoder = null;
                 if (this.OSCReceiver != null)
                 {
-                    this.OSCReceiver.shutdownServer();
+                    this.OSCReceiver.Shutdown();
                 }
                 this.OSCReceiver = null;
                 if (this.OSCSender != null)
                 {
-                    this.OSCSender.shutdownServer();
+                    this.OSCSender.Shutdown();
                 }
                 this.OSCSender = null;
                 if (this.channelMan != null)
@@ -412,7 +528,11 @@ namespace CactusOSC
                     this.channelMan.shutDown();
                 }
                 this.channelMan = null;
-
+                if (this.connectionMan != null)
+                {
+                    this.connectionMan.Shutdown();
+                }
+                this.connectionMan = null;
                 
                 this.started = false;
 
