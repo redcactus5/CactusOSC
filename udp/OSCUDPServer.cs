@@ -394,7 +394,7 @@ namespace CactusOSC
                 catch(Exception error)
                 {
                     
-                    this.internalShutDown(error);
+                    this.internalShutDown(new ServerStartupFailedException("server Startup failed!",error));
                 }
                 
             }
@@ -464,7 +464,7 @@ namespace CactusOSC
                 
                 if (error != null)
                 {
-                    throw new ServerStartupFailedException("OSC UDP Server Error!", error);
+                    throw error;
                 }
 
             
