@@ -12,6 +12,7 @@ it comes fully featured with:
 * Strong .NET object model
 * a complete set of osc object classes
 * a built in osc send and receive udp server
+* a built in osc send and receive tcp server
 * multithreading
 * Automatic type-tag generation
 * automatic sizing
@@ -45,12 +46,12 @@ namespace demo
         {
 
         }
-        
-        public void testOSCReceive()
+        public OSCPackage finalBundle;
+        public void testTCP()
         {
-            OSCServer testServer=new OSCServer();
-            testServer.StartOSCServer(receivePort, receiveAddress, receivePort, OSCServerAddress,true, true,50000, OSCQueueDropMode.DropOldest,OSCQueueDropMode.Wait);
-            RawOSCConverter testConverter= new RawOSCConverter();
+            
+            
+            RawOSCConverter testConverter = new RawOSCConverter();
             OSCMessage demoMessage = new OSCMessage("/demo");
 
             OSCInt testInt = new OSCInt(43110);
@@ -60,7 +61,7 @@ namespace demo
             OSCLong testLong = new OSCLong(43110L);
             OSCTimeTag testTimeTag = new OSCTimeTag(new OSCTimeTagValue(0, 1));
             OSCDouble testDouble = new OSCDouble(3.14d);
-            OSCNonstandardString testNonstandardString= new OSCNonstandardString("test");
+            OSCNonstandardString testNonstandardString = new OSCNonstandardString("test");
             OSCChar testChar = new OSCChar('c');
             OSCColor testColor = new OSCColor(255, 0, 0, 255);
             OSCMIDI testMidi = new OSCMIDI(0, 0x9c, 0x0, 0x7f);
@@ -68,20 +69,92 @@ namespace demo
             OSCNil testNil = new OSCNil();
             OSCInfinitum testInf = new OSCInfinitum();
 
-            OSCValue[] templateOSCArray = new OSCValue[14] { testInt,testString,testFloat,testBlob,testLong,testTimeTag,testDouble,testNonstandardString,testChar,testColor,testMidi,testBool,testNil,testInf};
+            OSCValue[] templateOSCArray = new OSCValue[14] { testInt, testString, testFloat, testBlob, testLong, testTimeTag, testDouble, testNonstandardString, testChar, testColor, testMidi, testBool, testNil, testInf };
 
 
-            OSCArray testArray= new OSCArray(templateOSCArray);
+            OSCArray testArray = new OSCArray(templateOSCArray);
 
-            OSCValue[] messageArguments= new OSCValue[15] { testArray, testInt, testString, testFloat, testBlob, testLong, testTimeTag, testDouble, testNonstandardString, testChar, testColor, testMidi, testBool, testNil, testInf };
+            OSCValue[] messageArguments = new OSCValue[15] { testArray, testInt, testString, testFloat, testBlob, testLong, testTimeTag, testDouble, testNonstandardString, testChar, testColor, testMidi, testBool, testNil, testInf };
 
-            OSCMessage testMessage=new OSCMessage("/test",messageArguments);
+            OSCMessage testMessage = new OSCMessage("/test", messageArguments);
 
             OSCBundleElement testElement = new OSCBundleElement(testMessage);
 
-            OSCBundleElement[] bundlePayloads= new OSCBundleElement[2] {testElement,testElement};
+            OSCBundleElement[] bundlePayloads = new OSCBundleElement[2] { testElement, testElement };
 
-            OSCBundle packageToSend= new OSCBundle(bundlePayloads);
+            OSCBundle packageToSend = new OSCBundle(bundlePayloads);
+            this.finalBundle = packageToSend;
+            Task.Run(externalServer);
+            OSCTCPServer testServer1= new OSCTCPServer();
+            testServer1.InnitiateConnection(IPAddress.Loopback, 6000, true, 50000, false, 640000, true, true, true, 50000, OSCQueueDropMode.DropNewest, OSCQueueDropMode.Wait);
+            
+            while (true)
+            {
+                testServer1.WaitForOSCPackageReception();
+                
+                OSCPackage received;
+
+                if (testServer1.TryReceiveOSCPackage(out received))
+                {
+                    Console.WriteLine(received.ToString());
+                }
+                else
+                {
+                    Console.WriteLine("none received!");
+                }
+
+                
+            }
+
+        }
+
+        public async Task externalServer()
+        {
+            OSCTCPServer testServer0= new OSCTCPServer();
+            testServer0.AcceptConnection(6000, false, IPAddress.Any, true, 30000, false, 64000, true, true, true, 50000, OSCQueueDropMode.DropNewest, OSCQueueDropMode.Wait);
+            while (true)
+            {
+                testServer0.SendOSCPackage(this.finalBundle);
+                testServer0.WaitForSendCompletion();
+                await Task.Delay(1000);
+            }
+        }
+        public void testUDP()
+        {
+            OSCUDPServer testServer = new OSCUDPServer();
+            testServer.StartOSCServer(receivePort, IPAddress.Any, receivePort, IPAddress.Parse(OSCServerAddress), true, true, 50000, OSCQueueDropMode.DropOldest, OSCQueueDropMode.Wait);
+            RawOSCConverter testConverter = new RawOSCConverter();
+            OSCMessage demoMessage = new OSCMessage("/demo");
+
+            OSCInt testInt = new OSCInt(43110);
+            OSCString testString = new OSCString("test");
+            OSCFloat testFloat = new OSCFloat(3.14f);
+            OSCBlob testBlob = new OSCBlob(testConverter.EncodeOSCPackage(demoMessage));
+            OSCLong testLong = new OSCLong(43110L);
+            OSCTimeTag testTimeTag = new OSCTimeTag(new OSCTimeTagValue(0, 1));
+            OSCDouble testDouble = new OSCDouble(3.14d);
+            OSCNonstandardString testNonstandardString = new OSCNonstandardString("test");
+            OSCChar testChar = new OSCChar('c');
+            OSCColor testColor = new OSCColor(255, 0, 0, 255);
+            OSCMIDI testMidi = new OSCMIDI(0, 0x9c, 0x0, 0x7f);
+            OSCBool testBool = new OSCBool(true);
+            OSCNil testNil = new OSCNil();
+            OSCInfinitum testInf = new OSCInfinitum();
+
+            OSCValue[] templateOSCArray = new OSCValue[14] { testInt, testString, testFloat, testBlob, testLong, testTimeTag, testDouble, testNonstandardString, testChar, testColor, testMidi, testBool, testNil, testInf };
+
+
+            OSCArray testArray = new OSCArray(templateOSCArray);
+
+            OSCValue[] messageArguments = new OSCValue[15] { testArray, testInt, testString, testFloat, testBlob, testLong, testTimeTag, testDouble, testNonstandardString, testChar, testColor, testMidi, testBool, testNil, testInf };
+
+            OSCMessage testMessage = new OSCMessage("/test", messageArguments);
+
+            OSCBundleElement testElement = new OSCBundleElement(testMessage);
+
+            OSCBundleElement[] bundlePayloads = new OSCBundleElement[2] { testElement, testElement };
+
+            OSCBundle packageToSend = new OSCBundle(bundlePayloads);
 
             while (true)
             {
@@ -91,11 +164,11 @@ namespace demo
                 testServer.WaitForSendCompletion();
                 testServer.WaitForOSCPackageReception();
                 long endTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-                long elapsed=endTime- startTime;
+                long elapsed = endTime - startTime;
                 Console.WriteLine(elapsed.ToString());
                 OSCPackage received;
-                
-                if(testServer.TryReceiveOSCPackage(out received))
+
+                if (testServer.TryReceiveOSCPackage(out received))
                 {
                     Console.WriteLine(received.ToString());
                 }

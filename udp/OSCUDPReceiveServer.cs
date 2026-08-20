@@ -8,6 +8,7 @@ CactusOSC is distributed in the hope that it will be useful, but WITHOUT ANY WAR
 
 You should have received a copy of the GNU Lesser General Public License along with CactusOSC. If not, see <https://www.gnu.org/licenses/>. 
 */
+using System.Net;
 using System.Net.Sockets;
 
 using System.Threading.Channels;
@@ -15,17 +16,19 @@ using System.Threading.Channels;
 namespace CactusOSC
 {
 
-    internal class OSCReceiveServer:IDisposable
+    internal class OSCUDPReceiveServer:IDisposable
     {
         UdpClient receiveServer;
-        private string address;
+        private IPAddress address;
         private ushort port;
         private Channel<byte[]> messagePool;
         private CancellationTokenSource shutdownTrigger;
         private Task receiveTask;
         private ChannelManager converterBridge;
+        private CancellationTokenSource linkedToken;
+        private ErrorAndShutdownCarrier carreir;
 
-        public OSCReceiveServer(ChannelManager converterBridge, string address, ushort port)
+        public OSCUDPReceiveServer(ChannelManager converterBridge, IPAddress address, ushort port)
         {
             this.address = address;
             this.port = port;
@@ -34,24 +37,26 @@ namespace CactusOSC
 
         }
 
-        public void start()
+        public void start(ErrorAndShutdownCarrier carrier)
         {
             this.shutdownTrigger = new CancellationTokenSource();
+            this.linkedToken = CancellationTokenSource.CreateLinkedTokenSource(shutdownTrigger.Token, carrier.getTokenSource().Token);
+            this.carreir = carrier;
             if (this.receiveServer != null)
             {
                 receiveServer.Close();
             }
-            if (this.address == null)
+            if ((this.address == null)||(this.address==IPAddress.Any))
             {
                 this.receiveServer = new UdpClient(this.port);
             }
             else
             {
-                this.receiveServer = new UdpClient(this.address, this.port);
+                this.receiveServer = new UdpClient(this.address.ToString(), this.port);
             }
             
             
-            this.receiveTask = Task.Run(receiveOSC);
+            this.receiveTask = receiveOSC();
         }
         
         private async Task receiveOSC()
@@ -66,7 +71,7 @@ namespace CactusOSC
                     
 
 
-                    await writer.WriteAsync(message.Buffer);
+                    await writer.WriteAsync(message.Buffer,this.shutdownTrigger.Token);
                 }
                 catch (ObjectDisposedException)
                 {
@@ -92,24 +97,50 @@ namespace CactusOSC
             {
                 throw new ServerNotStartedException();
             }
-            this.shutdownTrigger.Cancel();
-            this.receiveTask.GetAwaiter().GetResult();
-            this.receiveTask = null;
-            this.receiveServer.Close();
-            this.Dispose();
+
+            if (this.receiveTask != null)
+            {
+                this.receiveTask.GetAwaiter().GetResult();
+                this.receiveTask = null;
+            }
+            
+            
+            if (this.shutdownTrigger != null)
+            {
+                if (!this.shutdownTrigger.IsCancellationRequested)
+                {
+                    this.shutdownTrigger.Cancel();
+                }
+                
+            }
+            if (this.receiveServer != null)
+            {
+                this.receiveServer.Close();
+                this.receiveServer.Dispose();
+                this.receiveServer = null;
+            }
+            if (this.shutdownTrigger != null)
+            {
+                this.shutdownTrigger.Dispose();
+                this.shutdownTrigger = null;
+            }
+            if (linkedToken != null)
+            {
+                if (!linkedToken.IsCancellationRequested)
+                {
+                    linkedToken.Cancel();
+
+                }
+                linkedToken.Dispose();
+                linkedToken = null;
+            }
         }
 
         public void Dispose()
         {
-            ;
-            if (this.shutdownTrigger != null)
-            {
-                this.shutdownTrigger.Dispose();
-            }
-            if(this.receiveServer!= null)
-            {
-                this.receiveServer.Dispose();
-            }
+            
+            
+            this.shutdownServer();
             
         }
     }

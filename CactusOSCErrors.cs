@@ -29,6 +29,73 @@ namespace CactusOSC
         {
         }
     }
+
+    public class ServerShuttingDownException : Exception
+    {
+        public ServerShuttingDownException()
+        {
+        }
+
+        public ServerShuttingDownException(string message)
+            : base(message)
+        {
+        }
+
+        public ServerShuttingDownException(string message, Exception innerException)
+            : base(message, innerException)
+        {
+        }
+    }
+    public class ServerStartupFailedException : Exception
+    {
+        public ServerStartupFailedException()
+        {
+        }
+
+        public ServerStartupFailedException(string message)
+            : base(message)
+        {
+        }
+
+        public ServerStartupFailedException(string message, Exception innerException)
+            : base(message, innerException)
+        {
+        }
+    }
+
+    public class OSCServerConnectionTimeoutException : Exception
+    {
+        public OSCServerConnectionTimeoutException()
+        {
+        }
+
+        public OSCServerConnectionTimeoutException(string message)
+            : base(message)
+        {
+        }
+
+        public OSCServerConnectionTimeoutException(string message, Exception innerException)
+            : base(message, innerException)
+        {
+        }
+    }
+
+    public class OSCInvalidMessageSizeException : Exception
+    {
+        public OSCInvalidMessageSizeException()
+        {
+        }
+
+        public OSCInvalidMessageSizeException(string message)
+            : base(message)
+        {
+        }
+
+        public OSCInvalidMessageSizeException(string message, Exception innerException)
+            : base(message, innerException)
+        {
+        }
+    }
     public class ServerNotStartedException: InvalidOperationException
     {
         public ServerNotStartedException()
