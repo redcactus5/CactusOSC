@@ -113,6 +113,10 @@ namespace CactusOSC
                     //user triggered shutdown
                     break;
                 }
+                catch(Exception EX)
+                {
+                    Carreir.setException(EX);
+                }
 
             }
         }

@@ -43,7 +43,7 @@ namespace CactusOSC
         {
             byte[] messageCache;
             byte[] sizeCache = new byte[4];
-            while (!this.ShutdownTrigger.IsCancellationRequested)
+            while (!this.linkedToken.IsCancellationRequested)
             {
                 try
                 {
@@ -83,6 +83,9 @@ namespace CactusOSC
                 {
                     //user triggered shutdown
                     break;
+                }catch(Exception ex)
+                {
+                    carrier.setException(ex);
                 }
                 
 
