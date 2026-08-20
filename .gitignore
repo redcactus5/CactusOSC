@@ -428,3 +428,6 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+.vs/CactusOSC.slnx/v18/.suo
+.vs/CactusOSC.slnx/v18/DocumentLayout.json
+/.vs
