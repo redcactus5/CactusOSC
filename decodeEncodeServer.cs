@@ -85,13 +85,13 @@ namespace CactusOSC
 
             if (parallelMode)
             {
-                this.EncoderServer = this.ParallelEncodingService();
-                this.DecoderServer = this.ParallelDecodingService();
+                this.EncoderServer = Task.Run(this.ParallelEncodingService);
+                this.DecoderServer = Task.Run(this.ParallelDecodingService);
             }
             else
             {
-                this.EncoderServer = this.SerialEncodingService();
-                this.DecoderServer = this.SerialDecodingService();
+                this.EncoderServer = Task.Run(this.SerialEncodingService);
+                this.DecoderServer = Task.Run(this.SerialDecodingService);
             }
             
 

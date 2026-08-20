@@ -42,7 +42,7 @@ namespace CactusOSC
 
             ShutdownTrigger = new CancellationTokenSource();
             this.linkedTrigger = CancellationTokenSource.CreateLinkedTokenSource(ShutdownTrigger.Token, carrier.getTokenSource().Token);
-            this.ReceiveTask = ReceiveOSC();
+            this.ReceiveTask = Task.Run(ReceiveOSC);
         }
 
         public async Task ReceiveOSC()

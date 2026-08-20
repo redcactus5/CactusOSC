@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Text;
@@ -35,13 +36,13 @@ namespace CactusOSC
             this.carrier = carrier;
 
             this.SendFinished = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-            this.SendTask = SendOSC();
+            this.SendTask = Task.Run(SendOSC);
         }
 
         public async Task SendOSC()
         {
             byte[] messageCache;
-
+            byte[] sizeCache = new byte[4];
             while (!this.ShutdownTrigger.IsCancellationRequested)
             {
                 try
@@ -51,6 +52,8 @@ namespace CactusOSC
                     {
                         if (messageCache != null)
                         {
+                            BinaryPrimitives.WriteInt32BigEndian(sizeCache, messageCache.Length);
+                            await Connection.WriteAsync(sizeCache);
                             await Connection.WriteAsync(messageCache,this.linkedToken.Token);
                         }
 
