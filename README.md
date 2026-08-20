@@ -1,7 +1,7 @@
 # CactusOSC
 
 a simple, powerful, easy to use c# Open Sound Control sending and receiving library, built entirely in c#, from the ground up, for .NET and c#.
-
+its not the fastest in the world, nor does it make the least allocations, but it sure is nice to use!
 
 
 it comes fully featured with:
@@ -25,7 +25,7 @@ it comes fully featured with:
 
 
 
-just create and start an OSCServer object and you are good to go! messages will automatically be processed and queued, and building messages is easy, just assemble them out of the provided classes. or, if you arent using UDP, or just want to get your hands dirty use the RawOSCConverter class to manually convert your object trees into sendable data and back!
+just create and start an OSCServer object and you are good to go! messages will automatically be processed and queued, and building messages is easy, just assemble them out of the provided classes. or, if you aren't using UDP or TCP, or just want to get your hands dirty, use the RawOSCConverter class to manually convert your object trees into sendable data and back!
 
 
 
