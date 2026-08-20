@@ -62,16 +62,16 @@ namespace CactusOSC
         private async Task receiveOSC()
         {
             ChannelWriter<byte[]> writer =this.messagePool.Writer;
-            while (!this.shutdownTrigger.IsCancellationRequested)
+            while (!this.linkedToken.IsCancellationRequested)
             {
                 
                 try
                 {
-                    UdpReceiveResult message = await receiveServer.ReceiveAsync(this.shutdownTrigger.Token);
+                    UdpReceiveResult message = await receiveServer.ReceiveAsync(this.linkedToken.Token);
                     
 
 
-                    await writer.WriteAsync(message.Buffer,this.shutdownTrigger.Token);
+                    await writer.WriteAsync(message.Buffer,this.linkedToken.Token);
                 }
                 catch (ObjectDisposedException)
                 {
@@ -87,6 +87,10 @@ namespace CactusOSC
                 {
                     //user called shutdown
                     break;
+                }
+                catch(Exception ex)
+                {
+                    carreir.setException(ex);
                 }
             }
 

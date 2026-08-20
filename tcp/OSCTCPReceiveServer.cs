@@ -50,21 +50,24 @@ namespace CactusOSC
             ChannelWriter<byte[]> writer = this.MessageQueue.Writer;
             while (!this.linkedTrigger.IsCancellationRequested)
             {
-                
+
 
                 try
                 {
                     await this.Connection.ReadExactlyAsync(this.SizeBuffer, this.linkedTrigger.Token);
                     this.CurrentMessageSize = BinaryPrimitives.ReadInt32BigEndian(this.SizeBuffer);
-                    if(this.CurrentMessageSize < 0)
+                    if (this.CurrentMessageSize < 0)
                     {
                         try
                         {
                             throw new OSCInvalidMessageSizeException();
-                        }catch(OSCInvalidMessageSizeException e){
-                            Carrier.setException(e);
                         }
-                        
+                        catch (OSCInvalidMessageSizeException e)
+                        {
+                            Carrier.setException(e);
+                            break;
+                        }
+
                     }
                     if (!this.UnboundedMessageSize)
                     {
@@ -75,10 +78,12 @@ namespace CactusOSC
                                 try
                                 {
                                     throw new OSCInvalidMessageSizeException();
+
                                 }
                                 catch (OSCInvalidMessageSizeException e)
                                 {
                                     Carrier.setException(e);
+                                    break;
                                 }
                             }
                             else
@@ -92,34 +97,34 @@ namespace CactusOSC
                                     if (count < 1024)
                                     {
                                         finalArray = new byte[count];
-                                        await this.Connection.ReadExactlyAsync(finalArray, this.ShutdownTrigger.Token);
+                                        await this.Connection.ReadExactlyAsync(finalArray, this.linkedTrigger.Token);
                                         count -= count;
                                     }
                                     else
                                     {
-                                        await this.Connection.ReadExactlyAsync(dummyArray, this.ShutdownTrigger.Token);
+                                        await this.Connection.ReadExactlyAsync(dummyArray, this.linkedTrigger.Token);
                                         count -= 1024;
-                                        
+
                                     }
 
                                 }
                             }
-                            
+
                         }
                         else
                         {
                             this.MessageBuffer = new byte[this.CurrentMessageSize];
-                            await this.Connection.ReadExactlyAsync(MessageBuffer, this.ShutdownTrigger.Token);
-                            await writer.WriteAsync(MessageBuffer, this.ShutdownTrigger.Token);
+                            await this.Connection.ReadExactlyAsync(MessageBuffer, this.linkedTrigger.Token);
+                            await writer.WriteAsync(MessageBuffer, this.linkedTrigger.Token);
                         }
                     }
                     else
                     {
                         this.MessageBuffer = new byte[this.CurrentMessageSize];
-                        await this.Connection.ReadExactlyAsync(MessageBuffer, this.ShutdownTrigger.Token);
-                        await writer.WriteAsync(MessageBuffer, this.ShutdownTrigger.Token);
+                        await this.Connection.ReadExactlyAsync(MessageBuffer, this.linkedTrigger.Token);
+                        await writer.WriteAsync(MessageBuffer, this.linkedTrigger.Token);
                     }
-                    
+
                 }
                 catch (ObjectDisposedException)
                 {
@@ -147,7 +152,11 @@ namespace CactusOSC
                     {
                         break;
                     }
-                    
+
+                }
+                catch (Exception e)
+                {
+                    Carrier.setException(e);
                 }
                 
             }
