@@ -463,7 +463,7 @@ namespace CactusOSC
         /// <param name="ReceiveDropMode"></param>
         /// <param name="SendDropMode"></param>
         /// <exception cref="ServerAlreadyStartedException"></exception>
-        public void InnitiateConnection(IPAddress Address, ushort Port, bool ShouldTimeout = true, uint Timeout = 30000, bool UnboundedMessageSize = false, uint MaxMessageSize = 640000, bool ThrowOnOversizedMessage = true, bool ParallelMode = true, bool UnboundedQueueMode = true, int BoundedQueueSize = 50000, OSCQueueDropMode ReceiveDropMode = OSCQueueDropMode.DropNewest, OSCQueueDropMode SendDropMode = OSCQueueDropMode.Wait)
+        public void InitiateConnection(IPAddress Address, ushort Port, bool ShouldTimeout = true, uint Timeout = 30000, bool UnboundedMessageSize = false, uint MaxMessageSize = 640000, bool ThrowOnOversizedMessage = true, bool ParallelMode = true, bool UnboundedQueueMode = true, int BoundedQueueSize = 50000, OSCQueueDropMode ReceiveDropMode = OSCQueueDropMode.DropNewest, OSCQueueDropMode SendDropMode = OSCQueueDropMode.Wait)
         {
             if (this.shuttingDown)
             {
