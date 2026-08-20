@@ -1,4 +1,7 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+﻿
+
+
+<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 		<PackageId>CactusOSC</PackageId>
@@ -15,37 +18,37 @@
 	<ItemGroup>
 		<None Include="README.md" Pack="true" PackagePath="/" />
 	</ItemGroup>
-  <PropertyGroup>
-    <TargetFrameworks>net10.0;net9.0;net8.0</TargetFrameworks>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-    <Platforms>AnyCPU;x64;x86;ARM32;ARM64</Platforms>
-    <NeutralLanguage>en</NeutralLanguage>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFrameworks>net10.0;net9.0;net8.0</TargetFrameworks>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<Platforms>AnyCPU;x64;x86;ARM32;ARM64</Platforms>
+		<NeutralLanguage>en</NeutralLanguage>
+	</PropertyGroup>
 
-	
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <DebugType>embedded</DebugType>
-    <IsAotCompatible>True</IsAotCompatible>
-  </PropertyGroup>
 
-	
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
-    <DebugType>embedded</DebugType>
-    <IsAotCompatible>True</IsAotCompatible>
-  </PropertyGroup>
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+		<DebugType>embedded</DebugType>
+		<IsAotCompatible>True</IsAotCompatible>
+	</PropertyGroup>
 
-	
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM32'">
-    <DebugType>embedded</DebugType>
-    <IsAotCompatible>True</IsAotCompatible>
-  </PropertyGroup>
 
-	
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">
-    <DebugType>embedded</DebugType>
-    <IsAotCompatible>True</IsAotCompatible>
-  </PropertyGroup>
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
+		<DebugType>embedded</DebugType>
+		<IsAotCompatible>True</IsAotCompatible>
+	</PropertyGroup>
+
+
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM32'">
+		<DebugType>embedded</DebugType>
+		<IsAotCompatible>True</IsAotCompatible>
+	</PropertyGroup>
+
+
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">
+		<DebugType>embedded</DebugType>
+		<IsAotCompatible>True</IsAotCompatible>
+	</PropertyGroup>
 
 	<PropertyGroup>
 		<PackageLicenseFile>LICENSE</PackageLicenseFile>
@@ -55,34 +58,35 @@
 		<None Include="LICENSE" Pack="true" PackagePath="/" />
 	</ItemGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <DebugType>embedded</DebugType>
-    <IsAotCompatible>True</IsAotCompatible>
-  </PropertyGroup>
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+		<DebugType>embedded</DebugType>
+		<IsAotCompatible>True</IsAotCompatible>
+	</PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-    <DebugType>embedded</DebugType>
-    <IsAotCompatible>True</IsAotCompatible>
-  </PropertyGroup>
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+		<DebugType>embedded</DebugType>
+		<IsAotCompatible>True</IsAotCompatible>
+	</PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
-    <DebugType>embedded</DebugType>
-    <IsAotCompatible>True</IsAotCompatible>
-  </PropertyGroup>
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
+		<DebugType>embedded</DebugType>
+		<IsAotCompatible>True</IsAotCompatible>
+	</PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM32'">
-    <DebugType>embedded</DebugType>
-    <IsAotCompatible>True</IsAotCompatible>
-  </PropertyGroup>
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM32'">
+		<DebugType>embedded</DebugType>
+		<IsAotCompatible>True</IsAotCompatible>
+	</PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x86'">
-    <DebugType>embedded</DebugType>
-    <IsAotCompatible>True</IsAotCompatible>
-  </PropertyGroup>
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x86'">
+		<DebugType>embedded</DebugType>
+		<IsAotCompatible>True</IsAotCompatible>
+	</PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <DebugType>embedded</DebugType>
-    <IsAotCompatible>True</IsAotCompatible>
-  </PropertyGroup>
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+		<DebugType>embedded</DebugType>
+		<IsAotCompatible>True</IsAotCompatible>
+	</PropertyGroup>
 
 </Project>
+
