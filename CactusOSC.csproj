@@ -2,11 +2,11 @@
 	<PropertyGroup>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 		<PackageId>CactusOSC</PackageId>
-		<Version>0.6.1</Version>
+		<Version>0.6.2</Version>
 		<Authors>RedCactus5</Authors>
 		<Description>a simple and easy to use complete open sound control implementation for .NET</Description>
 		<RepositoryUrl>https://github.com/redcactus5/CactusOSC</RepositoryUrl>
-		<PackageTags>osc;open-sound-control;audio;music;udp;networking</PackageTags>
+		<PackageTags>osc;open-sound-control;audio;music;udp;networking;tcp;automation;</PackageTags>
 	</PropertyGroup>
 	<PropertyGroup>
 		<PackageReadmeFile>README.md</PackageReadmeFile>

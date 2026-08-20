@@ -86,7 +86,7 @@ namespace demo
             this.finalBundle = packageToSend;
             Task.Run(externalServer);
             OSCTCPServer testServer1= new OSCTCPServer();
-            testServer1.InnitiateConnection(IPAddress.Loopback, 6000, true, 50000, false, 640000, true, true, true, 50000, OSCQueueDropMode.DropNewest, OSCQueueDropMode.Wait);
+            testServer1.InitiateConnection(IPAddress.Loopback, 6000, true, 50000, false, 640000, true, true, true, 50000, OSCQueueDropMode.DropNewest, OSCQueueDropMode.Wait);
             
             while (true)
             {
