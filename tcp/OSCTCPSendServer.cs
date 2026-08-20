@@ -39,6 +39,7 @@ namespace CactusOSC
             this.SendTask = Task.Run(SendOSC);
         }
 
+
         public async Task SendOSC()
         {
             byte[] messageCache;

@@ -22,6 +22,7 @@ it comes fully featured with:
 * Bundle hierarchy is never flattened
 * full OSC 1.1 bundle hierarchy preservation
 * OSC 1.1 compliance
+* zero dependencies besides the standard library
 
 
 
